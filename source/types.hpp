@@ -17,11 +17,18 @@ struct delta_t {
 
 template <typename T>
 struct rect {
+    rect(T left, T top, T right, T bottom)
+        : left(left), top(top), right(right), bottom(bottom)
+    {
+    }
+
     T left, top, right, bottom;
 
     T width()  const { return right - left; }
     T height() const { return bottom - top; }
 };
+
+typedef rect<unsigned> urect;
 
 enum class direction : uint16_t {
     here       = 0,

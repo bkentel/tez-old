@@ -15,18 +15,18 @@ TEST(MapGenerator, RoomCompound) {
     auto room1 = room_simple::generate(0, 0, gen);
     auto room2 = room_compound::generate(0, 0, gen);
 
-    //room1.write([&](unsigned x, unsigned y, room_part part) {
-    //    switch (part) {
-    //    case room_part::empty :  std::cout << "empty";  image.set(x, y, 0x00, 0x00, 0x00, 0x00); break;
-    //    case room_part::floor :  std::cout << "floor";  image.set(x, y, 0xFF, 0x00, 0x00, 0x00); break;
-    //    case room_part::v_edge : std::cout << "v_edge"; image.set(x, y, 0x00, 0xFF, 0x00, 0x00); break;
-    //    case room_part::h_edge : std::cout << "h_edge"; image.set(x, y, 0x00, 0x00, 0xFF, 0x00); break;
-    //    case room_part::corner_nw : std::cout << "corner"; image.set(x, y, 0xFF, 0xFF, 0x00, 0x00); break;
-    //    case room_part::corner_ne : std::cout << "corner"; image.set(x, y, 0xFF, 0x00, 0xFF, 0x00); break;
-    //    case room_part::corner_sw : std::cout << "corner"; image.set(x, y, 0x00, 0xFF, 0xFF, 0x00); break;
-    //    case room_part::corner_se : std::cout << "corner"; image.set(x, y, 0xFF, 0xFF, 0xFF, 0x00); break;
-    //    }
-    //});
+    room2.write([&](unsigned x, unsigned y, room_part part) {
+        switch (part) {
+        case room_part::empty :  std::cout << "empty";  image.set(x, y, 0x00, 0x00, 0x00, 0x00); break;
+        case room_part::floor :  std::cout << "floor";  image.set(x, y, 0xFF, 0x00, 0x00, 0x00); break;
+        case room_part::v_edge : std::cout << "v_edge"; image.set(x, y, 0x00, 0xFF, 0x00, 0x00); break;
+        case room_part::h_edge : std::cout << "h_edge"; image.set(x, y, 0x00, 0x00, 0xFF, 0x00); break;
+        case room_part::corner_nw : std::cout << "corner"; image.set(x, y, 0xFF, 0xFF, 0x00, 0x00); break;
+        case room_part::corner_ne : std::cout << "corner"; image.set(x, y, 0xFF, 0x00, 0xFF, 0x00); break;
+        case room_part::corner_sw : std::cout << "corner"; image.set(x, y, 0x00, 0xFF, 0xFF, 0x00); break;
+        case room_part::corner_se : std::cout << "corner"; image.set(x, y, 0xFF, 0xFF, 0xFF, 0x00); break;
+        }
+    });
 
     image.save("room.tga");
 }

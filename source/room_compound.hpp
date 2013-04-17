@@ -15,8 +15,8 @@ public:
     unsigned top()    const override { return y_; }
     unsigned right()  const override { return x_ + width(); }
     unsigned bottom() const override { return y_ + height(); }
-    unsigned width()  const override { return w_; }
-    unsigned height() const override { return h_; }
+    unsigned width()  const override { return rect_.width(); }
+    unsigned height() const override { return rect_.height(); }
 
     room_compound(unsigned x, unsigned y, unsigned size, unsigned cell_size);
     room_compound(room_compound const& other);
@@ -46,8 +46,7 @@ public:
         at_(x, y) = part;
     }
 
-    void write(write_f out) const override {
-    }
+    void write(write_f out) const override;
 private:
     static room_compound generate_(
         unsigned x, unsigned y,
@@ -74,8 +73,9 @@ private:
 
     rect<unsigned> get_rect_() const;
 
-    unsigned x_, y_, w_, h_;
+    unsigned x_, y_;
     unsigned size_; // number of cells; W x H
     unsigned cell_size_;  // size of each cell
+    urect    rect_;
     std::unique_ptr<room_part[]> cells_;
 };

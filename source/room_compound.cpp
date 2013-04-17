@@ -4,10 +4,9 @@
 room_compound::room_compound(unsigned x, unsigned y, unsigned size, unsigned cell_size)
     : x_(x)
     , y_(y)
-    , w_(0)
-    , h_(0)
     , size_(size)
     , cell_size_(cell_size)
+    , rect_(0, 0, 0, 0)
     , cells_(new room_part[size*cell_size*size*cell_size])
 {
     BK_ASSERT(size >= MIN_CELLS);
@@ -22,10 +21,9 @@ room_compound::room_compound(unsigned x, unsigned y, unsigned size, unsigned cel
 room_compound::room_compound(room_compound const& other)
     : x_(other.x_)
     , y_(other.y_)
-    , w_(other.w_)
-    , h_(other.h_)
     , size_(other.size_)
     , cell_size_(other.cell_size_)
+    , rect_(other.rect_)
     , cells_(new room_part[size_*size_])
 {
     std::copy_n(other.cells_.get(), size_*size_*cell_size_, cells_.get());
@@ -34,10 +32,9 @@ room_compound::room_compound(room_compound const& other)
 room_compound::room_compound(room_compound&& other)
     : x_(other.x_)
     , y_(other.y_)
-    , w_(other.w_)
-    , h_(other.h_)
     , size_(other.size_)
     , cell_size_(other.cell_size_)
+    , rect_(other.rect_)
     , cells_(std::move(other.cells_))
 {
 }
@@ -101,10 +98,31 @@ room_compound room_compound::generate_(
     BK_ASSERT(max_x >= min_x);
     BK_ASSERT(max_y >= min_y);
     
-    result.w_ = max_x - min_x;
-    result.h_ = max_y - min_y;
+    auto const k = cell_size;
+
+    result.rect_ = urect(min_x*k, min_y*k, (max_x+1)*k, (max_y+1)*k);
+
+    for_each_xy(
+        result.rect_.left, result.rect_.right,
+        [&](unsigned x, unsigned y) {
+            result.set(x, y, result.transform(x, y));
+        },
+        result.rect_.top, result.rect_.bottom,
+        [&](unsigned, unsigned) {}
+    );
 
     return result;
+}
+
+void room_compound::write(write_f out) const {
+    for_each_xy(
+        rect_.left, rect_.right,
+        [&](unsigned x, unsigned y) {
+            out(x, y, at(x, y));
+        },
+        rect_.top, rect_.bottom,
+        [&](unsigned, unsigned) {}
+    );
 }
 
 //room_part room_compound::get_room_type_(

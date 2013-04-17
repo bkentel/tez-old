@@ -70,35 +70,63 @@ struct room_base {
             return room_part::empty;
         }
 
-        bool const N = (y != 0  ) && (at(x,   y-1) != room_part::empty);
-        bool const S = (y <  h-1) && (at(x,   y+1) != room_part::empty);
-        bool const E = (x <  w-1) && (at(x+1, y  ) != room_part::empty);
-        bool const W = (x != 0  ) && (at(x-1, y  ) != room_part::empty);
+        bool const in_n = (y != 0  );
+        bool const in_s = (y <  h-1);
+        bool const in_e = (x <  w-1);
+        bool const in_w = (x != 0  );
 
-        auto const count =
-            (N ? 1 : 0) +
-            (S ? 1 : 0) +
-            (E ? 1 : 0) +
-            (W ? 1 : 0);
+        bool const has_n  = in_n &&         (at(x,   y-1) != room_part::empty);
+        bool const has_s  = in_s &&         (at(x,   y+1) != room_part::empty);
+        bool const has_e  = in_e &&         (at(x+1, y  ) != room_part::empty);
+        bool const has_w  = in_w &&         (at(x-1, y  ) != room_part::empty);
+        bool const has_ne = in_n && in_e && (at(x+1, y-1) != room_part::empty);
+        bool const has_se = in_s && in_e && (at(x+1, y+1) != room_part::empty);
+        bool const has_nw = in_n && in_w && (at(x-1, y-1) != room_part::empty);
+        bool const has_sw = in_s && in_w && (at(x-1, y+1) != room_part::empty);
 
-        switch (count) {
-        case 2 :
-            if      (N && E) return room_part::corner_sw;
-            else if (N && W) return room_part::corner_se;
-            else if (S && E) return room_part::corner_nw;
-            else if (S && W) return room_part::corner_ne;
-            else             BK_ASSERT(false);
-            break;
-        case 3 :
-            return (N ^ S) ? room_part::h_edge
-                           : room_part::v_edge;
-        case 0 :
-        case 1 :
-        case 4 :
-            return room_part::floor;
+        static uint8_t const N  = 1 << 0;
+        static uint8_t const S  = 1 << 1;
+        static uint8_t const E  = 1 << 2;
+        static uint8_t const W  = 1 << 3;
+        static uint8_t const NE = 1 << 4;
+        static uint8_t const NW = 1 << 5;
+        static uint8_t const SE = 1 << 6;
+        static uint8_t const SW = 1 << 7;
+
+        uint8_t const value =
+            (has_n  ? N  : 0) |
+            (has_s  ? S  : 0) |
+            (has_e  ? E  : 0) |
+            (has_w  ? W  : 0) |
+            (has_ne ? NE : 0) |
+            (has_nw ? NW : 0) |
+            (has_se ? SE : 0) |
+            (has_sw ? SW : 0);
+
+        switch (value) {
+        case 0xFF & ~NE :
+        case 0xFF &  (N | E | NE) : return room_part::corner_ne;
+        case 0xFF & ~NW :
+        case 0xFF &  (N | W | NW) : return room_part::corner_nw;
+        case 0xFF & ~SE :
+        case 0xFF &  (S | E | SE) : return room_part::corner_se;
+        case 0xFF & ~SW :
+        case 0xFF &  (S | W | SW) : return room_part::corner_sw;
+        case 0xFF & ~(E | NE) :
+        case 0xFF & ~(E | SE) :
+        case 0xFF & ~(W | NW) :
+        case 0xFF & ~(W | SW) :
+        case 0xFF & ~(E | NE | SE) :
+        case 0xFF & ~(W | NW | SW) : return room_part::v_edge;
+        case 0xFF & ~(N | NE) :
+        case 0xFF & ~(N | NW) :
+        case 0xFF & ~(S | SE) :
+        case 0xFF & ~(S | SW) :
+        case 0xFF & ~(N | NE | NW) :
+        case 0xFF & ~(S | SE | SW) : return room_part::h_edge;
         }
 
-        return room_part::empty;
+        return room_part::floor;
     }
 
 };
