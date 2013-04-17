@@ -1,8 +1,10 @@
 #pragma once
 
 #include "room_base.hpp"
+#include "assert.hpp"
 
-struct room_compound : public room_base {
+class room_compound : public room_base {
+public:
     static unsigned const MIN_CELL_DIM = 2;
     static unsigned const MAX_CELL_DIM = 5;
 
@@ -13,24 +15,12 @@ struct room_compound : public room_base {
     unsigned top()    const override { return y_; }
     unsigned right()  const override { return x_ + width(); }
     unsigned bottom() const override { return y_ + height(); }
-    
-    unsigned width() const override {
-        return get_rect_().width();
-    }
-    
-    unsigned height() const override {
-        return get_rect_().height();
-    }
+    unsigned width()  const override { return w_; }
+    unsigned height() const override { return h_; }
 
     room_compound(unsigned x, unsigned y, unsigned size, unsigned cell_size);
     room_compound(room_compound const& other);
-
-    static room_compound generate_(
-        unsigned x, unsigned y,
-        unsigned size, unsigned cell_size,
-        unsigned ox, unsigned oy,
-        std::function<unsigned ()> generator
-    );
+    room_compound(room_compound&& other);
 
     template <typename T>
     static room_compound generate(unsigned x, unsigned y, T&& generator) {
@@ -48,12 +38,34 @@ struct room_compound : public room_base {
         });
     }
 
-    void write(write_f out) const override;
+    room_part at(unsigned x, unsigned y) const override {
+        return at_(x, y);    
+    }
+
+    void set(unsigned x, unsigned y, room_part part) override {
+        at_(x, y) = part;
+    }
+
+    void write(write_f out) const override {
+    }
 private:
-    struct cell_t {
-        cell_t() : empty(true) {}
-        bool empty;
-    };
+    static room_compound generate_(
+        unsigned x, unsigned y,
+        unsigned size, unsigned cell_size,
+        unsigned ox, unsigned oy,
+        std::function<unsigned ()> generator
+    );
+
+    room_part& at_(unsigned x, unsigned y) {
+        BK_ASSERT(x < size_*cell_size_);
+        BK_ASSERT(y < size_*cell_size_);
+
+        return *(cells_.get() + x + y*size_*cell_size_);
+    }
+
+    room_part const& at_(unsigned x, unsigned y) const {
+        return const_cast<room_compound*>(this)->at_(x, y);
+    }
 
     room_part get_room_type_(
         unsigned x, unsigned y,
@@ -62,19 +74,8 @@ private:
 
     rect<unsigned> get_rect_() const;
 
-    cell_t& at_(unsigned x, unsigned y) {
-        BK_ASSERT(x < size_);
-        BK_ASSERT(y < size_);
-
-        return *(cells_.get() + x + y*size_);
-    }
-
-    cell_t const& at_(unsigned x, unsigned y) const {
-        return const_cast<room_compound*>(this)->at_(x, y);     
-    }
-
-    unsigned x_, y_;
+    unsigned x_, y_, w_, h_;
     unsigned size_; // number of cells; W x H
     unsigned cell_size_;  // size of each cell
-    std::unique_ptr<cell_t[]> cells_;
+    std::unique_ptr<room_part[]> cells_;
 };

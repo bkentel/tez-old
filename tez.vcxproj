@@ -343,6 +343,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test_Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test_Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="source\room_compound.cpp" />
     <ClCompile Include="source\room_simple.cpp" />
     <ClCompile Include="source\targa.cpp" />
     <ClCompile Include="source\tests\main.cpp">

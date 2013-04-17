@@ -3,7 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "../tile_map.hpp"
-//#include "../room_compound.hpp"
+#include "../room_compound.hpp"
 #include "../room_simple.hpp"
 #include "../targa.hpp"
 
@@ -13,6 +13,7 @@ TEST(MapGenerator, RoomCompound) {
     std::default_random_engine gen(1984);
 
     auto room1 = room_simple::generate(0, 0, gen);
+    auto room2 = room_compound::generate(0, 0, gen);
 
     //room1.write([&](unsigned x, unsigned y, room_part part) {
     //    switch (part) {
