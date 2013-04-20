@@ -14,6 +14,7 @@
 #include <iostream>
 #include <thread>
 #include <mutex>
+#include <queue>
 
 #include <boost/exception/all.hpp>
 

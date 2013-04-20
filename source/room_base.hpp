@@ -42,15 +42,10 @@ void for_each_xy(
     }
 }
 
-struct room_base {
+struct room {
     typedef std::function<void (unsigned x, unsigned y, room_part part)> write_f;
 
-    virtual ~room_base() {}
-
-    virtual unsigned left()   const = 0;
-    virtual unsigned top()    const = 0;
-    virtual unsigned right()  const = 0;
-    virtual unsigned bottom() const = 0;
+    virtual ~room() {}
     
     virtual unsigned width()  const = 0;
     virtual unsigned height() const = 0;
@@ -58,7 +53,7 @@ struct room_base {
     virtual room_part at(unsigned x, unsigned y) const = 0;
     virtual void set(unsigned x, unsigned y, room_part part) = 0;
 
-    virtual void write(write_f out) const = 0;
+    virtual void write(unsigned x, unsigned y, write_f out) const = 0;
 
     room_part transform(unsigned x, unsigned y) const {
         auto const w = width();
@@ -130,3 +125,95 @@ struct room_base {
     }
 
 };
+
+class room_base : public room {
+public:
+    room_base(unsigned w, unsigned h, room_part init_value = room_part::empty)
+        : w_(w)
+        , h_(h)
+        , cells_(new room_part[w*h])
+    {
+        BK_ASSERT(w > 0);
+        BK_ASSERT(h > 0);
+
+        std::fill_n(cells_.get(), w*h, init_value);
+    }
+
+    room_base(room_base const& other)
+        : w_(other.w_)
+        , h_(other.h_)
+        , cells_(new room_part[w_*h_])
+    {
+        std::copy_n(other.cells_.get(), w_*h_, cells_.get());
+    }
+
+    room_base(room_base&& other)
+        : w_(other.w_)
+        , h_(other.h_)
+        , cells_(std::move(other.cells_))
+    {
+    }
+
+    room_base& operator=(room_base rhs) {
+        swap(rhs);
+        return *this;
+    }
+
+    room_base& operator=(room_base&& rhs) {
+        swap(rhs);
+        return *this;
+    }
+
+    void swap(room_base& other) {
+        std::swap(w_,     other.w_);
+        std::swap(h_,     other.h_);
+        std::swap(cells_, other.cells_);
+    }
+
+    virtual ~room_base() {}
+    
+    virtual unsigned width()  const override { return w_; }
+    virtual unsigned height() const override { return h_; }
+
+    virtual room_part at(unsigned x, unsigned y) const override {
+        return at_(x, y);
+    }
+    
+    virtual void set(unsigned x, unsigned y, room_part part) override {
+        at_(x, y) = part;
+    }
+
+    virtual void write(unsigned x, unsigned y, write_f out) const override {
+        for_each_xy(
+            left_(), right_(),
+            [&](unsigned xi, unsigned yi) {
+                out(x + xi, y + yi, at(xi, yi));
+            },
+            top_(), bottom_(),
+            [](unsigned, unsigned) {}
+        );
+    }
+protected:
+    virtual unsigned left_()   const { return 0; }
+    virtual unsigned right_()  const { return left_() + width(); }
+    virtual unsigned top_()    const { return 0; }
+    virtual unsigned bottom_() const { return top_() + height(); }
+
+    room_part& at_(unsigned x, unsigned y) {
+        BK_ASSERT(x < width());
+        BK_ASSERT(y < height());
+
+        return *(cells_.get() + x + y*width());
+    }
+
+    room_part const& at_(unsigned x, unsigned y) const {
+        return const_cast<room_base*>(this)->at_(x, y);
+    }
+
+    unsigned w_, h_;
+    std::unique_ptr<room_part[]> cells_;
+};
+
+inline void swap(room_base& lhs, room_base& rhs) {
+    lhs.swap(rhs);
+}

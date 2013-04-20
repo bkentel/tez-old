@@ -167,6 +167,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test_Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -227,6 +228,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_WIN32_WINNT=0x0601;WINVER=0x0601;_VARIADIC_MAX=10;NOMINMAX;STRICT;WIN32_LEAN_AND_MEAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>pch.hpp</PrecompiledHeaderFile>
+      <EnablePREfast>false</EnablePREfast>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -308,6 +310,7 @@
     <ClInclude Include="source\assert.hpp" />
     <ClInclude Include="source\d2d_renderer.hpp" />
     <ClInclude Include="source\entity.hpp" />
+    <ClInclude Include="source\geometry.hpp" />
     <ClInclude Include="source\keyboard.hpp" />
     <ClInclude Include="source\level.hpp" />
     <ClInclude Include="source\map_generator.hpp" />
