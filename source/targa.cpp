@@ -132,6 +132,7 @@ public:
         data_size_ = pixel_data_size + sizeof(header);
 
         data_.reset(new uint8_t[data_size_]());
+        std::fill_n(data_.get(), data_size_, 0);
 
         header_     = reinterpret_cast<header*>(data_.get());
         image_data_ = data_.get() + sizeof(header);

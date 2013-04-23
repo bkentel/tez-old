@@ -48,7 +48,12 @@ struct room {
     virtual ~room() {}
     
     virtual unsigned width()  const = 0;
-    virtual unsigned height() const = 0;
+    virtual unsigned height() const = 0;   
+
+    virtual unsigned left()   const = 0;   
+    virtual unsigned right()  const = 0;   
+    virtual unsigned top()    const = 0;   
+    virtual unsigned bottom() const = 0;   
 
     virtual room_part at(unsigned x, unsigned y) const = 0;
     virtual void set(unsigned x, unsigned y, room_part part) = 0;
@@ -56,19 +61,19 @@ struct room {
     virtual void write(unsigned x, unsigned y, write_f out) const = 0;
 
     room_part transform(unsigned x, unsigned y) const {
-        auto const w = width();
-        auto const h = height();
+        //auto const w = width();
+        //auto const h = height();
 
         if (
-            x > w || y > h || at(x, y) == room_part::empty
+            x >= right() || y >= bottom() || at(x, y) == room_part::empty
         ) {
             return room_part::empty;
         }
 
-        bool const in_n = (y != 0  );
-        bool const in_s = (y <  h-1);
-        bool const in_e = (x <  w-1);
-        bool const in_w = (x != 0  );
+        bool const in_n = (y != top()  );
+        bool const in_s = (y <  bottom() - 1 );
+        bool const in_e = (x <  right() - 1);
+        bool const in_w = (x != left()  );
 
         bool const has_n  = in_n &&         (at(x,   y-1) != room_part::empty);
         bool const has_s  = in_s &&         (at(x,   y+1) != room_part::empty);
@@ -175,6 +180,11 @@ public:
     virtual unsigned width()  const override { return w_; }
     virtual unsigned height() const override { return h_; }
 
+    virtual unsigned left()   const { return 0; }
+    virtual unsigned right()  const { return left() + width(); }
+    virtual unsigned top()    const { return 0; }
+    virtual unsigned bottom() const { return top() + height(); }
+
     virtual room_part at(unsigned x, unsigned y) const override {
         return at_(x, y);
     }
@@ -184,26 +194,26 @@ public:
     }
 
     virtual void write(unsigned x, unsigned y, write_f out) const override {
+        auto const l = left();
+        auto const t = top();
+
         for_each_xy(
-            left_(), right_(),
+            left(), right(),
             [&](unsigned xi, unsigned yi) {
-                out(x + xi, y + yi, at(xi, yi));
+                out(x + (xi - l), y + (yi - t), at(xi, yi));
             },
-            top_(), bottom_(),
+            top(), bottom(),
             [](unsigned, unsigned) {}
         );
     }
 protected:
-    virtual unsigned left_()   const { return 0; }
-    virtual unsigned right_()  const { return left_() + width(); }
-    virtual unsigned top_()    const { return 0; }
-    virtual unsigned bottom_() const { return top_() + height(); }
-
     room_part& at_(unsigned x, unsigned y) {
-        BK_ASSERT(x < width());
-        BK_ASSERT(y < height());
+        BK_ASSERT(x <  right());
+        BK_ASSERT(x >= left());
+        BK_ASSERT(y <  bottom());
+        BK_ASSERT(y >= top());
 
-        return *(cells_.get() + x + y*width());
+        return *(cells_.get() + x + y*room_base::width());
     }
 
     room_part const& at_(unsigned x, unsigned y) const {

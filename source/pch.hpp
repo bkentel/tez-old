@@ -15,6 +15,7 @@
 #include <thread>
 #include <mutex>
 #include <queue>
+#include <tuple>
 
 #include <boost/exception/all.hpp>
 

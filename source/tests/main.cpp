@@ -7,132 +7,165 @@
 #include "../room_simple.hpp"
 #include "../targa.hpp"
 
+struct room_set {
+    typedef rect<signed>                     rect_t;
+    typedef point2d<signed>                  point_t;
+    typedef std::unique_ptr<room>            unique_room;
+    typedef std::pair<unique_room, rect_t>   record_t;  
+    
+    struct intersection_t {
+        bool intersects() const {
+            return intersection.is_rect();
+        }
 
-TEST(MapGen, Simple) {
-    static auto const BUFFER = 1;
-
-    typedef rect<signed>     rect_t;
-    typedef point2d<signed> point_t;
-    typedef std::pair<room_simple, rect_t> record_t;   
-
-    std::vector<record_t>       placed_rooms;
-    std::queue<record_t const*> candidates;
-
-    std::default_random_engine gen(1984);
-
-    ////////////////////////////////////////////////////////////////////////////
-    auto const make_rect = [](room_simple const& room, signed x, signed y) {
-        return rect_t(point_t(x, y), room.width(), room.height());
+        rect_t intersection;
+        rect_t intersecting_rect;
     };
-    ////////////////////////////////////////////////////////////////////////////
-    auto const emplace_room = [&](room_simple&& room, signed x, signed y) {       
-        placed_rooms.emplace_back(
-            std::move(room), make_rect(room, x, y)
+
+    static auto const BUFFER_SIZE = 1;
+
+    static rect_t make_rect(room const& r, signed x, signed y) {
+        return rect_t(point_t(x, y), r.width(), r.height());
+    }
+
+    void add_room(unique_room room, rect_t const rect) {
+        rooms.emplace_back(
+            std::make_pair(std::move(room), rect)
         );
+    }
+    
+    intersection_t get_intersection(rect_t const room_rect) const {
+        intersection_t result = {room_rect, room_rect};
+        
+        for (auto const& r : rooms) {
+            result.intersection = intersection_of(room_rect, r.second);
 
-        candidates.push(&placed_rooms.back());
-    };
-    ////////////////////////////////////////////////////////////////////////////
-    auto const relocate_rect_h = [](
-        rect_t const& placed,
-        rect_t const& intersection,
-        rect_t&       room
-    ) {
-        auto const delta = BUFFER + intersection.width();
+            if (result.intersection.is_rect()) {
+                result.intersecting_rect = r.second;
+                break;
+            }
+        }
 
-        if (intersection.left >= placed.left) {
-            room.move_by(0+delta, 0);
-        } else if (intersection.right <= placed.right) {
-            room.move_by(0-delta, 0);
+        return result;
+    }
+
+    static rect_t relocate_rect_x(rect_t const room, intersection_t const i) {
+        auto const delta = static_cast<signed>(BUFFER_SIZE + i.intersection.width());
+
+        if (i.intersection.area() == room.area()) {
+            return room;//BK_ASSERT(false);
+        } else if (i.intersection.area() == i.intersecting_rect.area()) {
+            return room;//BK_ASSERT(false);
+        } else if (i.intersection.left >= i.intersecting_rect.left) {
+            return translate(room, delta, 0);
+        } else if (i.intersection.right <= i.intersecting_rect.right) {
+            return translate(room, -delta, 0);
         } else {
             BK_ASSERT(false);
         }
-    };
-    ////////////////////////////////////////////////////////////////////////////
-    auto const relocate_rect_v = [&](
-        rect_t const& placed,
-        rect_t const& intersection,
-        rect_t&       room
-    ) {
-        auto const delta = BUFFER + intersection.height();
+    }
 
-        if (intersection.top >= placed.top) {
-            room.move_by(0, 0-delta);
-        } else if (intersection.bottom <= placed.bottom) {
-            room.move_by(0, 0+delta);
+    static rect_t relocate_rect_y(rect_t const room, intersection_t const i) {
+        auto const delta = static_cast<signed>(BUFFER_SIZE + i.intersection.height());
+
+        if (i.intersection.area() == room.area()) {
+            return room;//BK_ASSERT(false);
+        } else if (i.intersection.area() == i.intersecting_rect.area()) {
+            return room;//BK_ASSERT(false);
+        } else if (i.intersection.top >= i.intersecting_rect.top) {
+            return translate(room, 0, delta);
+        } else if (i.intersection.bottom <= i.intersecting_rect.bottom) {
+            return translate(room, 0, -delta);
         } else {
             BK_ASSERT(false);
         }
-    };
-    ////////////////////////////////////////////////////////////////////////////
-    auto const find_intersection = [&](
-        rect_t const& test,
-        rect_t&       other,
-        rect_t&       intersection
-    ) {       
-        for (auto const& r : placed_rooms) {
-            other        = r.second;
-            intersection = intersection_of(test, other);
-                
-            if (intersection.is_rect()) return true;
-        }
+    }
 
-        return false;
-    };
-    ////////////////////////////////////////////////////////////////////////////
-    auto const place_room = [&](room_simple&& room, rect_t const& relative_to) {
-        auto const w = BUFFER + room.width();
-        auto const h = BUFFER + room.height();
+    bool place_room(unique_room room, rect_t const relative_to) {
+        auto const w = BUFFER_SIZE + room->width();
+        auto const h = BUFFER_SIZE + room->height();
 
-        auto const& r = relative_to;
-
-        rect_t rects[] = {
-            make_rect(room, r.right + w, r.top),
-            make_rect(room, r.left  - w, r.top),
-            make_rect(room, r.left,      r.bottom + h),
-            make_rect(room, r.left,      r.top    - h),
+        rect_t const rects[] = {
+            make_rect(*room, relative_to.right + w, relative_to.top),
+            make_rect(*room, relative_to.left  - w, relative_to.top),
+            make_rect(*room, relative_to.left,      relative_to.bottom + h),
+            make_rect(*room, relative_to.left,      relative_to.top    - h),
         };
 
-        std::uniform_int_distribution<size_t> dist(0, 3);
-
-        auto const first = dist(gen);
-
-        rect_t placed(0, 0, 0, 0);
-        rect_t ir(0, 0, 0, 0);
+        std::default_random_engine gen(1984);
+        auto const first = std::uniform_int_distribution<size_t>(0, 3)(gen);
 
         for (auto i = 0; i < 4; ++i) {
-            auto& rect = rects[(i + first) % 4];
+            auto r   = rects[(i + first) % 4];
+            auto ins = get_intersection(r);
             
-            while (find_intersection(rect, placed, ir)) {
-                if (i >= 2) {
-                    relocate_rect_h(placed, ir, rect);
-                } else {
-                    relocate_rect_v(placed, ir, rect);
+            if (ins.intersects()) {
+                if (i == 0 || i == 1) {
+                    r = relocate_rect_y(r, ins);
+                } else if (i == 2 || i == 3) {
+                    r = relocate_rect_x(r, ins);
+                }
+
+                if (get_intersection(r).intersects()) {
+                    continue;
                 }
             }
 
-            emplace_room(std::move(room), rect.left, rect.top);
-            return;
+            add_room(std::move(room), r);
+            return true;
         }
-    };
-    ////////////////////////////////////////////////////////////////////////////
 
-    emplace_room(room_simple::generate(gen), 0, 0);
-
-    while (placed_rooms.size() < 15) {       
-        auto cand = candidates.front();
-        candidates.pop();
-
-        place_room(room_simple::generate(gen), cand->second);
+        return false;
     }
 
+    explicit room_set(std::default_random_engine& gen)
+        : gen(gen)
+    {
+        std::queue<rect_t> candidates;
+    
+        {
+            auto room = unique_room(
+                new room_compound(room_compound::generate(gen))
+            );
 
+            auto const rect = make_rect(*room, 0, 0);
+
+            add_room(std::move(room), rect);
+            candidates.push(rect);
+        }
+
+        while (!candidates.empty() && rooms.size() < 10) {       
+            auto cand = candidates.front();
+
+            if (place_room(
+                unique_room(
+                    new room_compound(room_compound::generate(gen))
+                ),
+                cand)
+            ) {
+                candidates.push(rooms.back().second);
+            } else {
+                candidates.pop();
+            }
+        }
+        
+    }
+
+    std::vector<record_t> rooms;
+    std::default_random_engine& gen;
+};
+
+
+TEST(MapGen, Simple) {
     image_targa image(200, 200, image_targa::image_type::rgb24);
 
+    std::default_random_engine gen(1984);
+    
+    room_set rooms(gen);
 
-    for (auto const& r : placed_rooms) {
+    for (auto const& r : rooms.rooms) {
 
-        r.first.write(r.second.left + 50, r.second.top + 50,
+        r.first->write(r.second.left + 50, r.second.top + 50,
             [&](unsigned x, unsigned y, room_part part) {
                 switch (part) {
                 case room_part::empty     : image.set(x, y, 0x00, 0x00, 0x00, 0x00); break;
@@ -265,31 +298,48 @@ TEST(Range, ConstructInvalid) {
 }
 
 TEST(MapGenerator, RoomCompound) {
+    //unsigned const seeds[] = {
+    //    13,        
+    //    987,
+    //    555,
+    //    1025,
+    //    1984,
+    //    999,
+    //    1578,
+    //    9999,
+    //    123456,
+    //    987,
+    //    10001,
+    //};
 
+    //for (int i = 0; i < 10; ++i) {
+    //    image_targa image(100, 100, image_targa::image_type::rgb24);
 
-    //image_targa image(100, 100, image_targa::image_type::rgb24);
+    //    auto const seed = seeds[i];
+    //
+    //    std::default_random_engine gen(seed);
 
-    //std::default_random_engine gen(1984);
+    //    auto room = room_compound::generate(gen);   
 
-    //auto room1 = room_simple::generate(gen);
-    //auto room2 = room_compound::generate(gen);   
+    //    room.write(0, 0,
+    //        [&](unsigned x, unsigned y, room_part part) {
+    //            switch (part) {
+    //            case room_part::empty     : image.set(x, y, 0x00, 0x00, 0x00, 0x00); break;
+    //            case room_part::floor     : image.set(x, y, 0xFF, 0x00, 0x00, 0x00); break;
+    //            case room_part::v_edge    : image.set(x, y, 0x00, 0xFF, 0x00, 0x00); break;
+    //            case room_part::h_edge    : image.set(x, y, 0x00, 0x00, 0xFF, 0x00); break;
+    //            case room_part::corner_nw : image.set(x, y, 0xFF, 0xFF, 0x00, 0x00); break;
+    //            case room_part::corner_ne : image.set(x, y, 0xFF, 0x00, 0xFF, 0x00); break;
+    //            case room_part::corner_sw : image.set(x, y, 0x00, 0xFF, 0xFF, 0x00); break;
+    //            case room_part::corner_se : image.set(x, y, 0xFF, 0xFF, 0xFF, 0x00); break;
+    //            }
 
-    //room2.write(0, 0,
-    //    [&](unsigned x, unsigned y, room_part part) {
-    //        switch (part) {
-    //        case room_part::empty     : image.set(x, y, 0x00, 0x00, 0x00, 0x00); break;
-    //        case room_part::floor     : image.set(x, y, 0xFF, 0x00, 0x00, 0x00); break;
-    //        case room_part::v_edge    : image.set(x, y, 0x00, 0xFF, 0x00, 0x00); break;
-    //        case room_part::h_edge    : image.set(x, y, 0x00, 0x00, 0xFF, 0x00); break;
-    //        case room_part::corner_nw : image.set(x, y, 0xFF, 0xFF, 0x00, 0x00); break;
-    //        case room_part::corner_ne : image.set(x, y, 0xFF, 0x00, 0xFF, 0x00); break;
-    //        case room_part::corner_sw : image.set(x, y, 0x00, 0xFF, 0xFF, 0x00); break;
-    //        case room_part::corner_se : image.set(x, y, 0xFF, 0xFF, 0xFF, 0x00); break;
+    //            //std::cout << "(" << std::to_string(x) << " " << std::to_string(y) << ")";
     //        }
-    //    }
-    //);
+    //    );
 
-    //image.save("room.tga");
+    //    image.save(std::string("room") + std::to_string(seed) + ".tga");
+    //}
 }
 
 TEST(TileIterator, IteratorDistance) {
