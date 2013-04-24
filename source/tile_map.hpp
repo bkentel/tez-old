@@ -323,6 +323,8 @@ public:
         return data_.get()[x + y*width_];
     }
 
+
+
     region sub_region(unsigned x, unsigned y, unsigned w, unsigned h) const {
         BK_ASSERT(w > 0);
         BK_ASSERT(h > 0);

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "types.hpp"
+#include "direction.hpp"
 
 class entity;
 

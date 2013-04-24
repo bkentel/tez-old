@@ -38,42 +38,44 @@ room_compound room_compound::generate_(
         auto const where = history.back();
         history.pop_back();
 
-        auto const x = where.first;
-        auto const y = where.second;
+        auto const left   = where.first;
+        auto const right  = left + cell_size;
+        auto const top    = where.second;
+        auto const bottom = top + cell_size;
 
-        auto const left   = x;
-        auto const right  = x + cell_size;
-        auto const top    = y;
-        auto const bottom = y + cell_size;
-
-        min_x = x < min_x ? x : min_x;
-        min_y = y < min_y ? y : min_y;
-        max_x = x + cell_size > max_x ? x + cell_size : max_x;
-        max_y = y + cell_size > max_y ? y + cell_size : max_y;
+        min_x = left   < min_x ? left   : min_x;
+        min_y = top    < min_y ? top    : min_y;
+        max_x = right  > max_x ? right  : max_x;
+        max_y = bottom > max_y ? bottom : max_y;
 
         for_each_xy(
             left, right,
-            [&](unsigned x, unsigned y) {
+            [&](unsigned const x, unsigned const y) {
                 result.set(x, y, room_part::floor);
             },
             top, bottom,
             [](unsigned, unsigned){}
         );
 
-        bool const gen_north = generator() < 100 - 2*room_count ? (++room_count, true) : false;
-        bool const gen_south = generator() < 100 - 2*room_count ? (++room_count, true) : false;
-        bool const gen_east  = generator() < 100 - 2*room_count ? (++room_count, true) : false;
-        bool const gen_west  = generator() < 100 - 2*room_count ? (++room_count, true) : false;
+        bool const gen_n = generator() < 100 - 2*room_count;
+        bool const gen_s = generator() < 100 - 2*room_count;
+        bool const gen_e = generator() < 100 - 2*room_count;
+        bool const gen_w = generator() < 100 - 2*room_count;
 
-        bool const go_north = gen_north && (top    >= cell_size)     && result.at(left,     top - 1) == room_part::empty;
-        bool const go_west  = gen_west  && (left   >= cell_size)     && result.at(left - 1, top)     == room_part::empty;
-        bool const go_south = gen_south && (bottom <  count - cell_size) && result.at(left,     bottom)  == room_part::empty;
-        bool const go_east  = gen_east  && (right  <  count - cell_size) && result.at(right,    top)     == room_part::empty;
+        bool const in_n = (top    >= cell_size);
+        bool const in_w = (left   >= cell_size);
+        bool const in_s = (bottom <  count - cell_size);
+        bool const in_e = (right  <  count - cell_size);
 
-        if (go_north) history.emplace_back(left,             top - cell_size);
-        if (go_west)  history.emplace_back(left - cell_size, top  );
-        if (go_south) history.emplace_back(left,             bottom);
-        if (go_east)  history.emplace_back(right,            top  );
+        bool const go_n = gen_n && in_n && result.at(left,     top - 1) == room_part::empty;
+        bool const go_w = gen_w && in_w && result.at(left - 1, top    ) == room_part::empty;
+        bool const go_s = gen_s && in_s && result.at(left,     bottom ) == room_part::empty;
+        bool const go_e = gen_e && in_e && result.at(right,    top    ) == room_part::empty;
+
+        if (go_n) history.emplace_back(left,             top - cell_size), ++room_count;
+        if (go_w) history.emplace_back(left - cell_size, top            ), ++room_count;
+        if (go_s) history.emplace_back(left,             bottom         ), ++room_count;
+        if (go_e) history.emplace_back(right,            top            ), ++room_count;
     }
 
     BK_ASSERT(max_x >= min_x);

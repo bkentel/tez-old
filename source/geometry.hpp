@@ -78,6 +78,9 @@ inline bool operator!=(range<T> const& a, range<U> const& b) {
 ////////////////////////////////////////////////////////////////////////////////
 template <typename T>
 struct rect {
+    template <typename T>
+    friend std::ostream& operator<<(std::ostream& out, rect<T> const& r);
+
     typedef typename std::make_unsigned<T>::type difference_t;
 
     template <typename U>
@@ -134,6 +137,17 @@ struct rect {
 
     T left, top, right, bottom;
 };
+
+template <typename T>
+inline std::ostream& operator<<(std::ostream& out, rect<T> const& r) {
+    out << "rect("
+        << std::to_string(r.left)   << ", "
+        << std::to_string(r.top)    << ", "
+        << std::to_string(r.right)  << ", "
+        << std::to_string(r.bottom) << ")";
+
+    return out;
+}
 
 template <typename T, typename U, typename V>
 inline rect<T> translate(rect<T> const& r, U dx, V dy) {

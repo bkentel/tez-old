@@ -60,12 +60,11 @@ struct room {
 
     virtual void write(unsigned x, unsigned y, write_f out) const = 0;
 
-    room_part transform(unsigned x, unsigned y) const {
-        //auto const w = width();
-        //auto const h = height();
-
+    room_part transform(unsigned const x, unsigned const y) const {
         if (
-            x >= right() || y >= bottom() || at(x, y) == room_part::empty
+            x >= right()  ||
+            y >= bottom() ||
+            at(x, y) == room_part::empty
         ) {
             return room_part::empty;
         }
@@ -105,13 +104,17 @@ struct room {
 
         switch (value) {
         case 0xFF & ~NE :
-        case 0xFF &  (N | E | NE) : return room_part::corner_ne;
+        case 0xFF &  (N | E | NE) : 
+        case 0xFF &  (N | E | NE | SW) : return room_part::corner_ne;
         case 0xFF & ~NW :
-        case 0xFF &  (N | W | NW) : return room_part::corner_nw;
+        case 0xFF &  (N | W | NW) :
+        case 0xFF &  (N | W | NW | SE) : return room_part::corner_nw;
         case 0xFF & ~SE :
-        case 0xFF &  (S | E | SE) : return room_part::corner_se;
+        case 0xFF &  (S | E | SE) : 
+        case 0xFF &  (S | E | SE | NW) : return room_part::corner_se;
         case 0xFF & ~SW :
-        case 0xFF &  (S | W | SW) : return room_part::corner_sw;
+        case 0xFF &  (S | W | SW) : 
+        case 0xFF &  (S | W | SW | NE) : return room_part::corner_sw;
         case 0xFF & ~(E | NE) :
         case 0xFF & ~(E | SE) :
         case 0xFF & ~(W | NW) :

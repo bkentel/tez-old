@@ -52,10 +52,10 @@ location_t entity::location() const {
 }
 
 void entity::move_to_(direction const dir) {
-    auto const delta = get_delta(dir);
+    //auto const delta = get_delta(dir);
 
-    x_ += delta.dx;
-    y_ += delta.dy;
+    //x_ += delta.dx;
+    //y_ += delta.dy;
 }
 
 void entity::set_position_(coord_t x, coord_t y) {
