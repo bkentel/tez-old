@@ -96,7 +96,7 @@ TEST_F(Grid2DTest, MoveConstructor) {
     }
 }
 
-TEST(Block, Directions) {
+TEST(Block, Center) {
     static const unsigned SIZE = 3;
         
     grid2d<unsigned> grid(SIZE, SIZE, 0);
@@ -124,6 +124,38 @@ TEST(Block, Directions) {
     EXPECT_EQ(3, center.get<direction::west>());
     EXPECT_EQ(5, center.get<direction::east>());
     EXPECT_EQ(6, center.get<direction::south_west>());
+    EXPECT_EQ(7, center.get<direction::south>());
+    EXPECT_EQ(8, center.get<direction::south_east>());
+}
+
+TEST(Block, Corner) {
+    static const unsigned SIZE = 3;
+        
+    grid2d<unsigned> grid(SIZE, SIZE, 0);
+    
+    for (unsigned y = 0; y < SIZE; ++y) {
+        for (unsigned x = 0; x < SIZE; ++x) {
+            grid.set(x, y, x + y*SIZE);
+        }
+    }
+
+    block<unsigned> center(grid, 0, 0, 0xFF);
+
+    EXPECT_EQ(center.nw, center.get<direction::north_west>());
+    EXPECT_EQ(center.n,  center.get<direction::north>());
+    EXPECT_EQ(center.ne, center.get<direction::north_east>());
+    EXPECT_EQ(center.w,  center.get<direction::west>());
+    EXPECT_EQ(center.e,  center.get<direction::east>());
+    EXPECT_EQ(center.sw, center.get<direction::south_west>());
+    EXPECT_EQ(center.s,  center.get<direction::south>());
+    EXPECT_EQ(center.se, center.get<direction::south_east>());
+
+    EXPECT_EQ(0xFF, center.get<direction::north_west>());
+    EXPECT_EQ(0xFF, center.get<direction::north>());
+    EXPECT_EQ(0xFF, center.get<direction::north_east>());
+    EXPECT_EQ(0xFF, center.get<direction::west>());
+    EXPECT_EQ(5, center.get<direction::east>());
+    EXPECT_EQ(0xFF, center.get<direction::south_west>());
     EXPECT_EQ(7, center.get<direction::south>());
     EXPECT_EQ(8, center.get<direction::south_east>());
 }
