@@ -81,7 +81,8 @@ struct rect {
     template <typename T>
     friend std::ostream& operator<<(std::ostream& out, rect<T> const& r);
 
-    typedef typename std::make_unsigned<T>::type difference_t;
+    typedef typename std::make_signed<T>::type   difference_t;
+    typedef typename std::make_unsigned<T>::type size_t;
 
     template <typename U>
     rect(point2d<U> p, T w, T h)
@@ -122,8 +123,8 @@ struct rect {
         bottom += dy;
     }
 
-    difference_t width()  const { return right - left; }
-    difference_t height() const { return bottom - top; }
+    size_t width()  const { return right - left; }
+    size_t height() const { return bottom - top; }
 
     template <typename U>
     bool intersects(rect<U> const& r) const {

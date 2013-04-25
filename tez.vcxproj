@@ -328,7 +328,7 @@
     <ClInclude Include="source\map_generator.hpp" />
     <ClInclude Include="source\pch.hpp" />
     <ClInclude Include="source\quad_tree.hpp" />
-    <ClInclude Include="source\room_base.hpp" />
+    <ClInclude Include="source\room.hpp" />
     <ClInclude Include="source\room_compound.hpp" />
     <ClInclude Include="source\room_simple.hpp" />
     <ClInclude Include="source\targa.hpp" />
@@ -372,6 +372,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="source\tests\room.cpp" />
     <ClCompile Include="source\tile_map.cpp" />
     <ClCompile Include="source\types.cpp" />
     <ClCompile Include="source\window.cpp" />

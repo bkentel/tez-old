@@ -2,11 +2,6 @@
 
 #include <type_traits>
 
-struct axis {};
-struct x_axis : public axis {};
-struct y_axis : public axis {};
-struct z_axis : public axis {};
-
 enum class direction {
     here       = 0,
     none       = 0,
@@ -23,6 +18,11 @@ enum class direction {
 };
 
 //==============================================================================
+struct axis {};
+struct x_axis : public axis {};
+struct y_axis : public axis {};
+struct z_axis : public axis {};
+
 template <typename T, direction Dir, signed Val = 0>
 struct get_axis_vector_base {
     static_assert(std::is_base_of<axis, T>::value, "T must be an axis type");

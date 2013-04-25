@@ -19,7 +19,7 @@ public :
     grid2d<unsigned> test_grid;
 };
 
-}
+} //namespace
 
 TEST_F(Grid2DTest, Constructor) {
     EXPECT_EQ(WIDTH,  test_grid.width());
@@ -139,23 +139,23 @@ TEST(Block, Corner) {
         }
     }
 
-    block<unsigned> center(grid, 0, 0, 0xFF);
+    block<unsigned> corner(grid, 0, 0, 0xFF);
 
-    EXPECT_EQ(center.nw, center.get<direction::north_west>());
-    EXPECT_EQ(center.n,  center.get<direction::north>());
-    EXPECT_EQ(center.ne, center.get<direction::north_east>());
-    EXPECT_EQ(center.w,  center.get<direction::west>());
-    EXPECT_EQ(center.e,  center.get<direction::east>());
-    EXPECT_EQ(center.sw, center.get<direction::south_west>());
-    EXPECT_EQ(center.s,  center.get<direction::south>());
-    EXPECT_EQ(center.se, center.get<direction::south_east>());
+    EXPECT_EQ(corner.nw, corner.get<direction::north_west>());
+    EXPECT_EQ(corner.n,  corner.get<direction::north>());
+    EXPECT_EQ(corner.ne, corner.get<direction::north_east>());
+    EXPECT_EQ(corner.w,  corner.get<direction::west>());
+    EXPECT_EQ(corner.e,  corner.get<direction::east>());
+    EXPECT_EQ(corner.sw, corner.get<direction::south_west>());
+    EXPECT_EQ(corner.s,  corner.get<direction::south>());
+    EXPECT_EQ(corner.se, corner.get<direction::south_east>());
 
-    EXPECT_EQ(0xFF, center.get<direction::north_west>());
-    EXPECT_EQ(0xFF, center.get<direction::north>());
-    EXPECT_EQ(0xFF, center.get<direction::north_east>());
-    EXPECT_EQ(0xFF, center.get<direction::west>());
-    EXPECT_EQ(5, center.get<direction::east>());
-    EXPECT_EQ(0xFF, center.get<direction::south_west>());
-    EXPECT_EQ(7, center.get<direction::south>());
-    EXPECT_EQ(8, center.get<direction::south_east>());
+    EXPECT_EQ(0xFF, corner.get<direction::north_west>());
+    EXPECT_EQ(0xFF, corner.get<direction::north>());
+    EXPECT_EQ(0xFF, corner.get<direction::north_east>());
+    EXPECT_EQ(0xFF, corner.get<direction::west>());
+    EXPECT_EQ(1,    corner.get<direction::east>());
+    EXPECT_EQ(0xFF, corner.get<direction::south_west>());
+    EXPECT_EQ(3,    corner.get<direction::south>());
+    EXPECT_EQ(4,    corner.get<direction::south_east>());
 }
