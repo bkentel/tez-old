@@ -3,24 +3,47 @@
 #include "types.hpp"
 #include "geometry.hpp"
 #include "grid2d.hpp"
+
 #include <functional>
 
 //! Tile categories used in map generation.
 enum class tile_category : uint8_t {
-    empty   = ' ',
-    wall    = '|',
-    ceiling = '#',
-    floor   = '.',
-    pit     = '_',
+    empty         = ' ',
+    wall          = '|',
+    ceiling       = '#',
+    floor         = '.',
+    pit           = '_',
     water_shallow = '=',
     water_deep    = '~',
 };
 
+//==============================================================================
+//! Room.
+//==============================================================================
 class room {
 public:
     typedef rect<signed>          rect_t;
     typedef grid2d<tile_category> grid_t;
     typedef block<tile_category>  block_t;
+
+    typedef grid_t::iterator       iterator;
+    typedef grid_t::block_iterator block_iterator;
+
+    block_iterator block_begin(tile_category fallback = tile_category::empty) {
+        return data_.block_begin(fallback);
+    }
+
+    block_iterator block_end(tile_category fallback = tile_category::empty) {
+        return data_.block_end(fallback);
+    }
+
+    iterator begin() {
+        return data_.begin();
+    }
+
+    iterator end() {
+        return data_.end();
+    }
 
     template <typename T>
     explicit room(T&& generator)
@@ -57,6 +80,18 @@ public:
     signed top()    const { return rect_.top; }
     signed bottom() const { return rect_.bottom; }
 
+    rect_t const& bounds() const {
+        return rect_;
+    }
+
+    void translate_by(signed dx, signed dy) {
+        rect_.move_by(dx, dy);
+    }
+
+    void translate_to(signed x, signed y) {
+        rect_.move_to(x, y);
+    }
+
     tile_category at(unsigned x, unsigned y) const {
         return data_.at(x, y);
     }
@@ -79,9 +114,11 @@ private:
     grid_t data_;
 };
 
-void swap(room& a, room& b) {
+inline void swap(room& a, room& b) {
     a.swap(b);
 }
+
+
 
 //template <typename T, T t>
 //struct enum_value {

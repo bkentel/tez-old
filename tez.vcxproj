@@ -335,6 +335,7 @@
     <ClInclude Include="source\direction.hpp" />
     <ClInclude Include="source\tile_map.hpp" />
     <ClInclude Include="source\types.hpp" />
+    <ClInclude Include="source\util.hpp" />
     <ClInclude Include="source\window.hpp" />
   </ItemGroup>
   <ItemGroup>
@@ -363,6 +364,7 @@
     <ClCompile Include="source\room_simple.cpp" />
     <ClCompile Include="source\targa.cpp" />
     <ClCompile Include="source\tests\direction.cpp" />
+    <ClCompile Include="source\tests\geometry.cpp" />
     <ClCompile Include="source\tests\grid2d.cpp">
       <PreprocessToFile Condition="'$(Configuration)|$(Platform)'=='Test_Debug|x64'">false</PreprocessToFile>
     </ClCompile>

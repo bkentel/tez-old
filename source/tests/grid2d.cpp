@@ -96,6 +96,49 @@ TEST_F(Grid2DTest, MoveConstructor) {
     }
 }
 
+TEST_F(Grid2DTest, BlockIterator) {
+    static unsigned const FALLBACK = 0;
+
+    auto beg = test_grid.block_begin(FALLBACK);
+    auto end = test_grid.block_end(FALLBACK);
+
+    EXPECT_THROW(*end,  assertion_failure);
+    EXPECT_THROW(++end, assertion_failure);
+    EXPECT_THROW(--beg, assertion_failure);
+
+    EXPECT_EQ(WIDTH*HEIGHT, std::distance(beg, end));
+
+    std::for_each(beg, end, [&](block<unsigned> const& b) {
+        EXPECT_EQ(
+            test_grid.get_block(b.x, b.y, FALLBACK), b
+        );
+    });
+}
+TEST_F(Grid2DTest, Iterator) {
+    auto beg = test_grid.begin();
+    auto end = test_grid.end();
+
+    EXPECT_THROW(*end,  assertion_failure);
+    EXPECT_THROW(++end, assertion_failure);
+    EXPECT_THROW(--beg, assertion_failure);
+
+    EXPECT_EQ(WIDTH*HEIGHT, std::distance(beg, end));
+
+    unsigned val = 0;
+    for (auto& i : test_grid) {
+        i = val++;
+    }
+
+    for (unsigned y = 0; y < HEIGHT; ++y) {
+        for (unsigned x = 0; x < WIDTH; ++x) {
+            EXPECT_EQ(
+                test_grid.at(x, y), x + y*WIDTH
+            );
+        }
+    }
+}
+
+
 TEST(Block, Center) {
     static const unsigned SIZE = 3;
         

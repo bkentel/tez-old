@@ -11,6 +11,16 @@ struct point2d {
     T x, y;
 };
 
+template <typename T, typename U>
+inline bool operator==(point2d<T> const& a, point2d<U> const& b) {
+    return a.x == b.x && a.y == b.y;
+}
+
+template <typename T, typename U>
+inline bool operator!=(point2d<T> const& a, point2d<U> const& b) {
+    return !(a == b);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 template <typename T>
 struct range {
@@ -148,6 +158,25 @@ inline std::ostream& operator<<(std::ostream& out, rect<T> const& r) {
         << std::to_string(r.bottom) << ")";
 
     return out;
+}
+
+template <signed S, typename T>
+void adjust_rect_y(rect<T>& a, rect<T> const b, rect<T> const i) {
+    static_assert(S == 1 || S == -1, "invalid sign");
+
+    T dy = 0;
+
+    if (i == a || i == b) {
+        dy = a.bottom >= b.top ?
+            a.bottom - b.top :
+            b.top - a.bottom
+    } else {
+        dy = (a.top <= b.top) ?
+            i.height() + 1 :
+            (b.top - a.top) + a.height() + 1;
+    }
+
+    a.move_by(0, S*dy);
 }
 
 template <typename T, typename U, typename V>
