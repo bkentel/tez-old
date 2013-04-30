@@ -357,7 +357,36 @@ public:
     grid2d(unsigned w, unsigned h)
         : grid2d(w, h, data_t(new T[w*h]))
     {
-        //std::fill_n(data_.get(), w*h, default);
+    }
+
+    template <typename U, typename F>
+    void transfer(
+        grid2d<U> const& src,
+        unsigned src_x,
+        unsigned src_y,
+        unsigned src_w,
+        unsigned src_h,
+        unsigned dest_x,
+        unsigned dest_y,
+        F&& function
+    ) {
+        BK_ASSERT(src_x + src_w <= src.width());
+        BK_ASSERT(src_y + src_h <= src.height());
+
+        BK_ASSERT(dest_x + src_w <= width());
+        BK_ASSERT(dest_y + src_h <= height());
+
+        for (unsigned y = 0; y < src_h; ++y) {
+            for (unsigned x = 0; x < src_w; ++x) {
+                set(
+                    dest_x + x,
+                    dest_y + y, 
+                    function(
+                        src.at(src_x + x, src_y + y)
+                    )
+                );
+            }
+        }
     }
 
     grid2d(grid2d&& other)
@@ -389,14 +418,14 @@ public:
         return x < width_ && y < height_;
     }
 
-    T at(unsigned x, unsigned y) const {
+    T const& at(unsigned x, unsigned y) const {
         BK_ASSERT(is_valid_index(x, y));
         return *(data_.get() + to_index_(x, y));
     }
 
     void set(unsigned x, unsigned y, T value) {
         BK_ASSERT(is_valid_index(x, y));
-        *(data_.get() + to_index_(x, y)) = value;
+        *(data_.get() + to_index_(x, y)) = std::move(value);
     }
 
     block<T> get_block(unsigned x, unsigned y, T fallback) const {

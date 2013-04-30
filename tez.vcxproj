@@ -360,21 +360,22 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test_Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test_Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="source\room.cpp" />
     <ClCompile Include="source\room_compound.cpp" />
     <ClCompile Include="source\room_simple.cpp" />
     <ClCompile Include="source\targa.cpp" />
-    <ClCompile Include="source\tests\direction.cpp" />
-    <ClCompile Include="source\tests\geometry.cpp" />
-    <ClCompile Include="source\tests\grid2d.cpp">
+    <ClCompile Include="source\tests\test_direction.cpp" />
+    <ClCompile Include="source\tests\test_geometry.cpp" />
+    <ClCompile Include="source\tests\test_grid2d.cpp">
       <PreprocessToFile Condition="'$(Configuration)|$(Platform)'=='Test_Debug|x64'">false</PreprocessToFile>
     </ClCompile>
-    <ClCompile Include="source\tests\main.cpp">
+    <ClCompile Include="source\tests\test_main.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="source\tests\room.cpp" />
+    <ClCompile Include="source\tests\test_room.cpp" />
     <ClCompile Include="source\tile_map.cpp" />
     <ClCompile Include="source\types.cpp" />
     <ClCompile Include="source\window.cpp" />

@@ -16,7 +16,7 @@ public:
     tile_data()
         : texture_id(0)
         , type(tile_category::empty)
-        , info()
+        , info(nullptr)
     {
     }
 
@@ -59,12 +59,26 @@ class tile_grid {
 public:
     tile_grid(unsigned width, unsigned height);
 
+    void write(room const& r);
+
     unsigned width() const {
         return data_.width();
     }
 
     unsigned height() const {
         return data_.height();
+    }
+
+    void print() {
+        std::cout << "===================================" << std::endl;
+
+        for (unsigned y = 0; y < height(); ++y) {
+            for (unsigned x = 0; x < width(); ++x) {
+                std::cout << static_cast<char>(data_.at(x, y).type);
+            }
+            std::cout << std::endl;
+        }
+        std::cout << std::endl;
     }
 private:   
     grid2d<tile_data> data_;

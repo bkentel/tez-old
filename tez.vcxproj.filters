@@ -116,19 +116,22 @@
     <ClCompile Include="source\room_compound.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="source\tests\direction.cpp">
+    <ClCompile Include="source\tests\test_direction.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="source\tests\grid2d.cpp">
+    <ClCompile Include="source\tests\test_room.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="source\tests\main.cpp">
+    <ClCompile Include="source\tests\test_main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="source\tests\room.cpp">
+    <ClCompile Include="source\tests\test_grid2d.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="source\tests\geometry.cpp">
+    <ClCompile Include="source\tests\test_geometry.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\room.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

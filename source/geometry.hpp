@@ -1,5 +1,7 @@
 #pragma once
 
+#include "direction.hpp"
+
 template <typename T>
 struct point2d {
     point2d(T x, T y)
@@ -62,16 +64,6 @@ inline auto intersection_of(range<T> const& a, range<U> const& b)
     );
 }
 
-//template <typename T, typename U>
-//inline auto union_of(range<T> const& a, range<U> const& b)
-//    -> range<typename std::common_type<T, U>::type>
-//{
-//    return range<typename std::common_type<T, U>::type>(
-//        a.first < b.first ? a.first : b.first,
-//        a.last  > b.last  ? a.last  : b.last
-//    );
-//}
-
 template <typename T, typename U>
 inline bool operator==(range<T> const& a, range<U> const& b) {
     return (a.first == b.first) && (a.last == b.last);
@@ -109,7 +101,7 @@ struct rect {
     }
 
     bool is_rect() const {
-        return (left <= right) && (top <= bottom);
+        return (left < right) && (top < bottom);
     }
 
     T area() const {
@@ -160,25 +152,6 @@ inline std::ostream& operator<<(std::ostream& out, rect<T> const& r) {
     return out;
 }
 
-template <signed S, typename T>
-void adjust_rect_y(rect<T>& a, rect<T> const b, rect<T> const i) {
-    static_assert(S == 1 || S == -1, "invalid sign");
-
-    T dy = 0;
-
-    if (i == a || i == b) {
-        dy = a.bottom >= b.top ?
-            a.bottom - b.top :
-            b.top - a.bottom
-    } else {
-        dy = (a.top <= b.top) ?
-            i.height() + 1 :
-            (b.top - a.top) + a.height() + 1;
-    }
-
-    a.move_by(0, S*dy);
-}
-
 template <typename T, typename U, typename V>
 inline rect<T> translate(rect<T> const& r, U dx, V dy) {
     return rect<T>(
@@ -206,23 +179,6 @@ inline auto intersection_of(rect<T> const& a, rect<U> const& b)
     );
 }
 
-//template <typename T, typename U>
-//inline auto union_of(rect<T> const& a, rect<U> const& b)
-//    -> rect<typename std::common_type<T, U>::type>
-//{
-//    range<T> const ax(a.left, a.right);
-//    range<T> const ay(a.top,  a.bottom);
-//    range<U> const bx(b.left, b.right);
-//    range<U> const by(b.top,  b.bottom);
-//
-//    auto const ux = union_of(ax, bx);
-//    auto const uy = union_of(ay, by);
-//
-//    return rect<typename std::common_type<T, U>::type>(
-//        ux.first, uy.first, ux.last, uy.last
-//    );
-//}
-
 template <typename T, typename U>
 inline bool operator==(rect<T> const& a, rect<U> const& b) {
     return
@@ -236,6 +192,34 @@ template <typename T, typename U>
 inline bool operator!=(rect<T> const& a, rect<U> const& b) {
     return !(a == b);
 }
-////////////////////////////////////////////////////////////////////////////////
-// struct rect;
-////////////////////////////////////////////////////////////////////////////////
+
+template <direction D> struct separate_rects;
+
+template <> struct separate_rects<direction::north> {
+    template <typename T>
+    static rect<T> get(rect<T> const a, rect<T> const b, T const padding = 0) {
+        return translate(a, 0, 0 - (padding + a.bottom - b.top));
+    }
+};
+
+template <> struct separate_rects<direction::south> {
+    template <typename T>
+    static rect<T> get(rect<T> const a, rect<T> const b, T const padding = 0) {
+        return translate(a, 0, 0 + (padding + b.bottom - a.top));
+    }
+};
+
+template <> struct separate_rects<direction::west> {
+    template <typename T>
+    static rect<T> get(rect<T> const a, rect<T> const b, T const padding = 0) {
+        return translate(a, 0 - (padding + a.right - b.left), 0);
+    }
+};
+
+template <> struct separate_rects<direction::east> {
+    template <typename T>
+    static rect<T> get(rect<T> const a, rect<T> const b, T const padding = 0) {
+        return translate(a, 0 + (padding + b.right - a.left), 0);
+    }
+};
+

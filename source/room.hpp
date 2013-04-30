@@ -17,10 +17,13 @@ enum class tile_category : uint8_t {
     water_deep    = '~',
 };
 
+class tile_grid;
+
 //==============================================================================
 //! Room.
 //==============================================================================
 class room {
+    friend tile_grid;
 public:
     typedef rect<signed>          rect_t;
     typedef grid2d<tile_category> grid_t;
@@ -106,6 +109,9 @@ public:
     ) const {
         return block_t(data_, x, y, fallback);
     }
+
+    typedef std::vector<std::unique_ptr<room>> room_list;
+    static room_list layout(room_list rooms);
 private:
     room(room const&)            BK_DELETE;
     room& operator=(room const&) BK_DELETE;

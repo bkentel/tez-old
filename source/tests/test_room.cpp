@@ -31,9 +31,9 @@ public :
 TEST(RoomTest, Compound) {
     std::default_random_engine random(1984);
 
-    while(1) {
-        auto test_room = room(compound_room_generator(random));
-    }
+    //while(1) {
+    //    auto test_room = room(compound_room_generator(random));
+    //}
 }
 
 TEST_F(RoomTest, Constructor) {

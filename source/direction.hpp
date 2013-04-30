@@ -62,6 +62,23 @@ BK_SPECIALIZE_AXIS(z, direction::up,         -1);
 BK_SPECIALIZE_AXIS(z, direction::down,        1);
 
 #undef BK_SPECIALIZE_AXIS
+
+//==============================================================================
+inline direction opposite(direction const dir) {
+    switch (dir) {
+    case direction::south :      return direction::north;
+    case direction::north :      return direction::south;
+    case direction::east :       return direction::west;
+    case direction::north_east : return direction::south_west;
+    case direction::south_east : return direction::north_west;
+    case direction::west :       return direction::east;
+    case direction::north_west : return direction::south_east;
+    case direction::south_west : return direction::north_east;
+    case direction::here :       return direction::here;
+    }
+
+    return direction::none;
+}
 //==============================================================================
 inline signed get_x_vector(direction const dir) {
     switch (dir) {
