@@ -5,7 +5,6 @@
 #include "grid2d.hpp"
 
 #include "room.hpp" //tile_category
-
 #include <memory>
 
 struct tile_info {
@@ -14,16 +13,17 @@ struct tile_info {
 class tile_data {
 public:
     tile_data()
-        : texture_id(0)
+        : info(nullptr)
+        , texture_id(0)
         , type(tile_category::empty)
-        , info(nullptr)
+        
     {
     }
 
     tile_data(tile_data&& other)
-        : texture_id(other.texture_id)
-        , type(other.type)
-        , info(std::move(other.info))
+        : info(std::move(other.info))
+        , texture_id(other.texture_id)
+        , type(other.type)        
     {
     }
 
@@ -35,14 +35,16 @@ public:
     void swap(tile_data& other) {
         using std::swap;
 
+        swap(info, other.info);
         swap(texture_id, other.texture_id);
         swap(type, other.type);
-        swap(info, other.info);
     }
 
-    uint32_t                   texture_id;
-    tile_category              type;
-    std::unique_ptr<tile_info> info;
+    typedef std::unique_ptr<tile_info> info_ptr;
+
+    info_ptr      info;
+    uint32_t      texture_id;
+    tile_category type;
 private:
     tile_data(tile_data const&)            BK_DELETE;
     tile_data& operator=(tile_data const&) BK_DELETE;
@@ -51,38 +53,6 @@ private:
 inline void swap(tile_data& a, tile_data& b) {
     a.swap(b);
 }
-
-//==============================================================================
-// A 2D grid of tiles.
-//==============================================================================
-class tile_grid {
-public:
-    tile_grid(unsigned width, unsigned height);
-
-    void write(room const& r);
-
-    unsigned width() const {
-        return data_.width();
-    }
-
-    unsigned height() const {
-        return data_.height();
-    }
-
-    void print() {
-        std::cout << "===================================" << std::endl;
-
-        for (unsigned y = 0; y < height(); ++y) {
-            for (unsigned x = 0; x < width(); ++x) {
-                std::cout << static_cast<char>(data_.at(x, y).type);
-            }
-            std::cout << std::endl;
-        }
-        std::cout << std::endl;
-    }
-private:   
-    grid2d<tile_data> data_;
-};
 
 //////////////////////////////////////////////////////////////////////////////////
 ////! Random access iterator over a 2D sub-region of a tile_map.

@@ -28,12 +28,47 @@ public :
     };
 };
 
-TEST(RoomTest, Compound) {
-    std::default_random_engine random(1984);
+TEST_F(RoomTest, FindConnectable) {
+    static const unsigned      W  = 5;
+    static const unsigned      H = 10;
+    static tile_category const V  = tile_category::floor;
 
-    //while(1) {
-    //    auto test_room = room(compound_room_generator(random));
-    //}
+    std::default_random_engine engine(1984);
+    auto random = random_wrapper<unsigned>(engine);
+
+    auto test_room = room(test_generator(V, W, H));
+
+    for (auto i = 0; i < 100; ++i) {
+        auto const p =
+            test_room.find_connectable_point(random, direction::north);
+        EXPECT_EQ(0U, p.y);
+        EXPECT_LT(p.x, W);
+        EXPECT_GE(p.x, 0U);
+    }
+
+    for (auto i = 0; i < 100; ++i) {
+        auto const p =
+            test_room.find_connectable_point(random, direction::south);
+        EXPECT_EQ(H-1, p.y);
+        EXPECT_LT(p.x, W);
+        EXPECT_GE(p.x, 0U);
+    }
+
+    for (auto i = 0; i < 100; ++i) {
+        auto const p =
+            test_room.find_connectable_point(random, direction::west);
+        EXPECT_EQ(0U, p.x);
+        EXPECT_LT(p.y, H);
+        EXPECT_GE(p.y, 0U);
+    }
+
+    for (auto i = 0; i < 100; ++i) {
+        auto const p =
+            test_room.find_connectable_point(random, direction::east);
+        EXPECT_EQ(W-1, p.x);
+        EXPECT_LT(p.y, H);
+        EXPECT_GE(p.y, 0U);
+    }
 }
 
 TEST_F(RoomTest, Constructor) {

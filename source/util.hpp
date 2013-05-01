@@ -3,6 +3,17 @@
 #include <limits>
 #include <functional>
 
+template <typename T>
+T min(T const head) {
+    return head;
+}
+
+template <typename T, typename... Ts>
+T min(T const head, Ts... tail) {
+    T const tail_min = min(tail...);
+    return head <= tail_min ? head : tail_min;
+}
+
 //==============================================================================
 //! Accumulates the minimum and maximum value pass to operator().
 //! @tparam T a numeric type.
@@ -47,7 +58,6 @@ struct random_wrapper {
             "type mismatch"
         );
     }
-   
 
     T operator()() {
         return gen_();

@@ -3,6 +3,7 @@
 #include "types.hpp"
 #include "geometry.hpp"
 #include "grid2d.hpp"
+#include "util.hpp"
 
 #include <functional>
 
@@ -15,17 +16,23 @@ enum class tile_category : uint8_t {
     pit           = '_',
     water_shallow = '=',
     water_deep    = '~',
+    door          = 'D',
 };
 
-class tile_grid;
+inline std::ostream& operator<<(std::ostream& out, tile_category const t) {
+    return out << static_cast<char>(t);
+}
+
+class map;
 
 //==============================================================================
 //! Room.
 //==============================================================================
 class room {
-    friend tile_grid;
+    friend map;
 public:
     typedef rect<signed>          rect_t;
+    typedef point2d<unsigned>     point_t;
     typedef grid2d<tile_category> grid_t;
     typedef block<tile_category>  block_t;
 
@@ -110,8 +117,7 @@ public:
         return block_t(data_, x, y, fallback);
     }
 
-    typedef std::vector<std::unique_ptr<room>> room_list;
-    static room_list layout(room_list rooms);
+    point_t find_connectable_point(random_wrapper<unsigned> random, direction dir) const;
 private:
     room(room const&)            BK_DELETE;
     room& operator=(room const&) BK_DELETE;
@@ -123,8 +129,6 @@ private:
 inline void swap(room& a, room& b) {
     a.swap(b);
 }
-
-
 
 //template <typename T, T t>
 //struct enum_value {

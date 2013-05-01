@@ -325,31 +325,31 @@
     <ClInclude Include="source\grid2d.hpp" />
     <ClInclude Include="source\keyboard.hpp" />
     <ClInclude Include="source\level.hpp" />
+    <ClInclude Include="source\map.hpp" />
     <ClInclude Include="source\map_generator.hpp" />
+    <ClInclude Include="source\map_layout.hpp" />
     <ClInclude Include="source\pch.hpp" />
     <ClInclude Include="source\quad_tree.hpp" />
     <ClInclude Include="source\room.hpp" />
     <ClInclude Include="source\room_compound.hpp" />
     <ClInclude Include="source\room_simple.hpp" />
+    <ClInclude Include="source\scope_exit.hpp" />
     <ClInclude Include="source\targa.hpp" />
     <ClInclude Include="source\direction.hpp" />
-    <ClInclude Include="source\tile_map.hpp" />
+    <ClInclude Include="source\tile.hpp" />
     <ClInclude Include="source\types.hpp" />
     <ClInclude Include="source\util.hpp" />
     <ClInclude Include="source\window.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="source\assert.cpp" />
     <ClCompile Include="source\d2d_renderer.cpp" />
-    <ClCompile Include="source\entity.cpp" />
-    <ClCompile Include="source\keyboard.cpp" />
-    <ClCompile Include="source\level.cpp" />
     <ClCompile Include="source\main.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test_Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test_Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test_Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test_Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="source\map_generator.cpp" />
     <ClCompile Include="source\pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
@@ -360,10 +360,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test_Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test_Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="source\room.cpp" />
-    <ClCompile Include="source\room_compound.cpp" />
-    <ClCompile Include="source\room_simple.cpp" />
-    <ClCompile Include="source\targa.cpp" />
     <ClCompile Include="source\tests\test_direction.cpp" />
     <ClCompile Include="source\tests\test_geometry.cpp" />
     <ClCompile Include="source\tests\test_grid2d.cpp">
@@ -374,11 +370,9 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <PreprocessToFile Condition="'$(Configuration)|$(Platform)'=='Test_Debug|x64'">false</PreprocessToFile>
     </ClCompile>
-    <ClCompile Include="source\tests\test_room.cpp" />
-    <ClCompile Include="source\tile_map.cpp" />
     <ClCompile Include="source\types.cpp" />
-    <ClCompile Include="source\window.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
