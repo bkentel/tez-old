@@ -1,6 +1,8 @@
 #include "pch.hpp"
 #include "grid2d.hpp"
 
+#include "scope_exit.hpp"
+
 #include <gtest/gtest.h>
 
 namespace {
@@ -11,194 +13,202 @@ public :
     static const unsigned HEIGHT = 10;
     static const unsigned VALUE  = 0xABC;
 
-    Grid2DTest()
-        : test_grid(WIDTH, HEIGHT, VALUE)
-    {
-    }
-
-    grid2d<unsigned> test_grid;
+    typedef grid2d<int>      grid_t;
+    typedef grid_t::position position_t;
 };
 
 } //namespace
 
-TEST_F(Grid2DTest, Constructor) {
-    EXPECT_EQ(WIDTH,  test_grid.width());
-    EXPECT_EQ(HEIGHT, test_grid.height());
+TEST_F(Grid2DTest, BlockIterators) {
+    typedef std::vector<int>::value_type t1;
+    typedef std::vector<int const>::value_type t2;
 
-    for (unsigned y = 0; y < HEIGHT; ++y) {
-        for (unsigned x = 0; x < WIDTH; ++x) {
-            EXPECT_EQ(VALUE, test_grid.at(x, y));
+    static_assert(!std::is_same<t1, t2>::value, "hmmm");
+
+    t1 a = 0;
+    t2 b = 1;
+
+    a = b;
+    b = a;
+
+    grid_t       grid_a;
+    auto&        grid_b = grid_a;
+    auto const&  grid_c = grid_a;
+    grid_t const grid_d;
+
+    typedef grid2d<int const> cgrid_t;
+
+    grid2d<int const>       grid_e;
+    auto&         grid_f = grid_e;
+    auto const&   grid_g = grid_e;
+    cgrid_t const grid_h;
+
+    for (auto const& i : make_block_iterator_adapter(grid_a)) { BK_UNUSED(i); }
+    for (auto const& i : make_block_iterator_adapter(grid_b)) { BK_UNUSED(i); }
+    for (auto const& i : make_block_iterator_adapter(grid_c)) { BK_UNUSED(i); }
+    for (auto const& i : make_block_iterator_adapter(grid_d)) { BK_UNUSED(i); }
+    for (auto const& i : make_block_iterator_adapter(grid_e)) { BK_UNUSED(i); }
+    for (auto const& i : make_block_iterator_adapter(grid_f)) { BK_UNUSED(i); }
+    for (auto const& i : make_block_iterator_adapter(grid_g)) { BK_UNUSED(i); }
+    for (auto const& i : make_block_iterator_adapter(grid_h)) { BK_UNUSED(i); }
+
+}
+
+TEST_F(Grid2DTest, DefaultConstructor) {
+    grid_t const grid;
+
+    EXPECT_EQ(0, grid.width());
+    EXPECT_EQ(0, grid.height());
+    EXPECT_EQ(0, grid.size());
+
+    EXPECT_EQ(nullptr, grid.data());
+
+    EXPECT_FALSE(grid.is_valid_position(0, 0));
+
+    ::BK_TEST_BREAK_ON_ASSERT = false;
+    {
+        BK_ON_SCOPE_EXIT({
+            ::BK_TEST_BREAK_ON_ASSERT = true;
+        });
+
+        EXPECT_THROW(
+            grid.at(position_t(0, 0)),
+            assertion_failure
+        );
+    }
+
+    for (auto const& block : make_block_iterator_adapter(grid)) {
+        BK_UNUSED(block);
+    }
+
+    for (auto const& i : grid) {
+        BK_UNUSED(i);
+    }
+}
+
+TEST_F(Grid2DTest, BlockIterator) {
+    auto const grid = grid_t(WIDTH, HEIGHT, VALUE);
+
+    for (auto const& block : make_block_iterator_adapter(grid)) {
+        EXPECT_NE(nullptr, block.here());
+        EXPECT_EQ(VALUE, *block.here());
+
+        if (block.x == 0) {
+            EXPECT_EQ(nullptr, block.west());
+            EXPECT_EQ(nullptr, block.north_west());
+            EXPECT_EQ(nullptr, block.south_west());
+        } else if (block.x == WIDTH - 1) {
+            EXPECT_EQ(nullptr, block.east());
+            EXPECT_EQ(nullptr, block.north_east());
+            EXPECT_EQ(nullptr, block.south_east());
+        }
+
+        if (block.y == 0) {
+            EXPECT_EQ(nullptr, block.north());
+            EXPECT_EQ(nullptr, block.north_west());
+            EXPECT_EQ(nullptr, block.north_east());
+        } else if (block.y == HEIGHT - 1) {
+            EXPECT_EQ(nullptr, block.south());
+            EXPECT_EQ(nullptr, block.south_west());
+            EXPECT_EQ(nullptr, block.south_east());
         }
     }
 }
 
 TEST_F(Grid2DTest, Swap) {
-    // create and grid with height and width reversed
-    grid2d<unsigned> grid(HEIGHT, WIDTH, VALUE + 1);
+    static auto const VALUE_A = VALUE;
+    static auto const VALUE_B = VALUE + 1;
 
-    swap(test_grid, grid);
+    auto grid_a = grid_t(WIDTH,  HEIGHT, VALUE_A);
+    auto grid_b = grid_t(HEIGHT, WIDTH,  VALUE_B);
 
-    EXPECT_EQ(HEIGHT, test_grid.width());
-    EXPECT_EQ(WIDTH,  test_grid.height());
+    swap(grid_a, grid_b);
 
-    for (unsigned y = 0; y < WIDTH; ++y) {
-        for (unsigned x = 0; x < HEIGHT; ++x) {
-            EXPECT_EQ(VALUE + 1, test_grid.at(x, y));
-        }
+    EXPECT_EQ(HEIGHT, grid_a.width());
+    EXPECT_EQ(WIDTH,  grid_a.height());
+
+    EXPECT_EQ(WIDTH,  grid_b.width());
+    EXPECT_EQ(HEIGHT, grid_b.height());
+
+    for (auto const& i : grid_a) {
+        EXPECT_EQ(VALUE_B, i);
     }
 
-    EXPECT_EQ(WIDTH,  grid.width());
-    EXPECT_EQ(HEIGHT, grid.height());
-
-    for (unsigned y = 0; y < HEIGHT; ++y) {
-        for (unsigned x = 0; x < WIDTH; ++x) {
-            EXPECT_EQ(VALUE, grid.at(x, y));
-        }
+    for (auto const& i : grid_b) {
+        EXPECT_EQ(VALUE_A, i);
     }
 }
 
 TEST_F(Grid2DTest, Clone) {
-    grid2d<unsigned> grid = test_grid.clone();
+    auto const grid_a = grid_t(WIDTH, HEIGHT, VALUE);
+    auto const grid_b = clone(grid_a);
+
+    EXPECT_EQ(WIDTH, grid_a.width());
+    EXPECT_EQ(WIDTH, grid_b.width());
+
+    EXPECT_EQ(HEIGHT, grid_a.height());
+    EXPECT_EQ(HEIGHT, grid_b.height());
+
+    for (auto const& i : grid_a) {
+        EXPECT_EQ(VALUE, i);
+    }
+
+    for (auto const& i : grid_b) {
+        EXPECT_EQ(VALUE, i);
+    }
+}
+
+TEST_F(Grid2DTest, Bounds) {
+    auto const grid = grid_t(WIDTH, HEIGHT, VALUE);
+
+    ::BK_TEST_BREAK_ON_ASSERT = false;
+    {
+        BK_ON_SCOPE_EXIT({
+            ::BK_TEST_BREAK_ON_ASSERT = true;
+        });
+
+        EXPECT_FALSE(grid.is_valid_position(WIDTH, 0));
+        EXPECT_THROW(grid.at(WIDTH, 0), assertion_failure);
+
+        EXPECT_FALSE(grid.is_valid_position(WIDTH, 0));
+        EXPECT_THROW(grid.at(0, HEIGHT), assertion_failure);
+    }    
+    
+    for (unsigned y = 0; y < HEIGHT; ++y) {
+        for (unsigned x = 0; x < WIDTH; ++x) {
+            EXPECT_TRUE(grid.is_valid_position(x, y));
+        }
+    }
+}
+
+TEST_F(Grid2DTest, FillConstructor) {
+    auto const gen = [](unsigned x, unsigned y) {
+        return x*x + 2*y;
+    };
+
+    auto grid = grid_t(WIDTH, HEIGHT, gen);
 
     EXPECT_EQ(WIDTH,  grid.width());
     EXPECT_EQ(HEIGHT, grid.height());
 
     for (unsigned y = 0; y < HEIGHT; ++y) {
         for (unsigned x = 0; x < WIDTH; ++x) {
-            EXPECT_EQ(test_grid.at(x, y), grid.at(x, y));
-        }
-    }
-}
-
-
-TEST_F(Grid2DTest, IsValidIndex) {
-    EXPECT_FALSE(test_grid.is_valid_index(WIDTH, 0));
-    EXPECT_FALSE(test_grid.is_valid_index(0, HEIGHT));
-    EXPECT_FALSE(test_grid.is_valid_index(WIDTH, HEIGHT));
-
-    for (unsigned y = 0; y < HEIGHT; ++y) {
-        for (unsigned x = 0; x < WIDTH; ++x) {
-            EXPECT_TRUE(test_grid.is_valid_index(x, y));
+            EXPECT_EQ(gen(x, y), grid.at(x, y));
         }
     }
 }
 
 TEST_F(Grid2DTest, MoveConstructor) {
-    grid2d<unsigned> grid = std::move(test_grid);
+    auto       grid_a = grid_t(WIDTH, HEIGHT, VALUE);
+    auto const grid_b = grid_t(std::move(grid_a));
 
-    EXPECT_EQ(WIDTH,  grid.width());
-    EXPECT_EQ(HEIGHT, grid.height());
+    EXPECT_EQ(0, grid_a.width());
+    EXPECT_EQ(0, grid_a.height());
 
-    for (unsigned y = 0; y < HEIGHT; ++y) {
-        for (unsigned x = 0; x < WIDTH; ++x) {
-            EXPECT_EQ(VALUE, grid.at(x, y));
-        }
+    EXPECT_EQ(WIDTH,  grid_b.width());
+    EXPECT_EQ(HEIGHT, grid_b.height());
+
+    for (auto const& i : grid_b) {
+        EXPECT_EQ(VALUE, i);
     }
-}
-
-TEST_F(Grid2DTest, BlockIterator) {
-    static unsigned const FALLBACK = 0;
-
-    auto beg = test_grid.block_begin(FALLBACK);
-    auto end = test_grid.block_end(FALLBACK);
-
-    EXPECT_THROW(*end,  assertion_failure);
-    EXPECT_THROW(++end, assertion_failure);
-    EXPECT_THROW(--beg, assertion_failure);
-
-    EXPECT_EQ(WIDTH*HEIGHT, std::distance(beg, end));
-
-    std::for_each(beg, end, [&](block<unsigned> const& b) {
-        EXPECT_EQ(
-            test_grid.get_block(b.x, b.y, FALLBACK), b
-        );
-    });
-}
-TEST_F(Grid2DTest, Iterator) {
-    auto beg = test_grid.begin();
-    auto end = test_grid.end();
-
-    EXPECT_THROW(*end,  assertion_failure);
-    EXPECT_THROW(++end, assertion_failure);
-    EXPECT_THROW(--beg, assertion_failure);
-
-    EXPECT_EQ(WIDTH*HEIGHT, std::distance(beg, end));
-
-    unsigned val = 0;
-    for (auto& i : test_grid) {
-        i = val++;
-    }
-
-    for (unsigned y = 0; y < HEIGHT; ++y) {
-        for (unsigned x = 0; x < WIDTH; ++x) {
-            EXPECT_EQ(
-                test_grid.at(x, y), x + y*WIDTH
-            );
-        }
-    }
-}
-
-
-TEST(Block, Center) {
-    static const unsigned SIZE = 3;
-        
-    grid2d<unsigned> grid(SIZE, SIZE, 0);
-    
-    for (unsigned y = 0; y < SIZE; ++y) {
-        for (unsigned x = 0; x < SIZE; ++x) {
-            grid.set(x, y, x + y*SIZE);
-        }
-    }
-
-    block<unsigned> center(grid, 1, 1, 0);
-
-    EXPECT_EQ(center.nw, center.get<direction::north_west>());
-    EXPECT_EQ(center.n,  center.get<direction::north>());
-    EXPECT_EQ(center.ne, center.get<direction::north_east>());
-    EXPECT_EQ(center.w,  center.get<direction::west>());
-    EXPECT_EQ(center.e,  center.get<direction::east>());
-    EXPECT_EQ(center.sw, center.get<direction::south_west>());
-    EXPECT_EQ(center.s,  center.get<direction::south>());
-    EXPECT_EQ(center.se, center.get<direction::south_east>());
-
-    EXPECT_EQ(0, center.get<direction::north_west>());
-    EXPECT_EQ(1, center.get<direction::north>());
-    EXPECT_EQ(2, center.get<direction::north_east>());
-    EXPECT_EQ(3, center.get<direction::west>());
-    EXPECT_EQ(5, center.get<direction::east>());
-    EXPECT_EQ(6, center.get<direction::south_west>());
-    EXPECT_EQ(7, center.get<direction::south>());
-    EXPECT_EQ(8, center.get<direction::south_east>());
-}
-
-TEST(Block, Corner) {
-    static const unsigned SIZE = 3;
-        
-    grid2d<unsigned> grid(SIZE, SIZE, 0);
-    
-    for (unsigned y = 0; y < SIZE; ++y) {
-        for (unsigned x = 0; x < SIZE; ++x) {
-            grid.set(x, y, x + y*SIZE);
-        }
-    }
-
-    block<unsigned> corner(grid, 0, 0, 0xFF);
-
-    EXPECT_EQ(corner.nw, corner.get<direction::north_west>());
-    EXPECT_EQ(corner.n,  corner.get<direction::north>());
-    EXPECT_EQ(corner.ne, corner.get<direction::north_east>());
-    EXPECT_EQ(corner.w,  corner.get<direction::west>());
-    EXPECT_EQ(corner.e,  corner.get<direction::east>());
-    EXPECT_EQ(corner.sw, corner.get<direction::south_west>());
-    EXPECT_EQ(corner.s,  corner.get<direction::south>());
-    EXPECT_EQ(corner.se, corner.get<direction::south_east>());
-
-    EXPECT_EQ(0xFF, corner.get<direction::north_west>());
-    EXPECT_EQ(0xFF, corner.get<direction::north>());
-    EXPECT_EQ(0xFF, corner.get<direction::north_east>());
-    EXPECT_EQ(0xFF, corner.get<direction::west>());
-    EXPECT_EQ(1,    corner.get<direction::east>());
-    EXPECT_EQ(0xFF, corner.get<direction::south_west>());
-    EXPECT_EQ(3,    corner.get<direction::south>());
-    EXPECT_EQ(4,    corner.get<direction::south_east>());
 }

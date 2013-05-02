@@ -3,10 +3,25 @@
 
 #include <gtest/gtest.h>
 
-TEST(Rect, Separate) {
+namespace {
     typedef rect<signed>    rect_t;
     typedef point2d<signed> point_t;
+}
 
+TEST(Rect, IsRect) {
+    EXPECT_FALSE(rect_t(point_t(0, 0), 0, 0).is_rect());
+    EXPECT_FALSE(rect_t(point_t(0, 0), 1, 0).is_rect());
+    EXPECT_FALSE(rect_t(point_t(0, 0), 0, 1).is_rect());
+
+    EXPECT_FALSE(rect_t(2, 2, 1, 1).is_rect());
+    EXPECT_FALSE(rect_t(0, 2, 1, 1).is_rect());
+    EXPECT_FALSE(rect_t(2, 0, 1, 1).is_rect());
+
+    EXPECT_TRUE(rect_t(point_t(0, 0), 1, 1).is_rect());
+    EXPECT_TRUE(rect_t(0, 0, 1, 1).is_rect());
+}
+
+TEST(Rect, Separate) {
     static auto const WB = 5;
     static auto const HB = 5;
 

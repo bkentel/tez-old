@@ -4,6 +4,8 @@
 #include "direction.hpp"
 
 TEST(Direction, GetXAxis) {
+    auto x = get_x_axis_vector<direction::here>::value;
+
     EXPECT_EQ( 0, get_x_axis_vector<direction::here>::value);
     EXPECT_EQ( 0, get_x_axis_vector<direction::none>::value);
     EXPECT_EQ( 0, get_x_axis_vector<direction::north>::value);

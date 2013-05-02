@@ -319,7 +319,7 @@
   <ItemGroup>
     <ClInclude Include="source\assert.hpp" />
     <ClInclude Include="source\config.hpp" />
-    <ClInclude Include="source\d2d_renderer.hpp" />
+    <ClInclude Include="source\platform\d2d_renderer.hpp" />
     <ClInclude Include="source\entity.hpp" />
     <ClInclude Include="source\geometry.hpp" />
     <ClInclude Include="source\grid2d.hpp" />
@@ -339,11 +339,11 @@
     <ClInclude Include="source\tile.hpp" />
     <ClInclude Include="source\types.hpp" />
     <ClInclude Include="source\util.hpp" />
-    <ClInclude Include="source\window.hpp" />
+    <ClInclude Include="source\platform\window.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\assert.cpp" />
-    <ClCompile Include="source\d2d_renderer.cpp" />
+    <ClCompile Include="source\platform\d2d_renderer.cpp" />
     <ClCompile Include="source\main.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test_Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test_Release|Win32'">true</ExcludedFromBuild>

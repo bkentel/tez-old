@@ -2,6 +2,14 @@
 
 #include "direction.hpp"
 
+template <typename T, typename R = typename std::make_unsigned<T>::type>
+inline R distance(T const a, T const b) {
+    return static_cast<R>(a >= b ? a - b : b - a);
+}
+
+//==============================================================================
+//! A 2 dimensional point type.
+//==============================================================================
 template <typename T>
 struct point2d {
     point2d(T x, T y)
@@ -14,13 +22,26 @@ struct point2d {
 };
 
 template <typename T, typename U>
-inline bool operator==(point2d<T> const& a, point2d<U> const& b) {
-    return a.x == b.x && a.y == b.y;
+inline bool operator==(point2d<T> const a, point2d<U> const b) {
+    return (a.x == b.x) && (a.y == b.y);
 }
 
 template <typename T, typename U>
-inline bool operator!=(point2d<T> const& a, point2d<U> const& b) {
+inline bool operator!=(point2d<T> const a, point2d<U> const b) {
     return !(a == b);
+}
+
+template <typename T, typename R = typename std::make_unsigned<T>::type>
+inline R distance2(point2d<T> const a, point2d<T> const b) {
+    auto const dx = distance(a.x, b.x);
+    auto const dy = distance(a.y, b.y):
+
+    return dx*dx + dy*dy;
+}
+
+template <typename T, typename R = typename std::make_unsigned<T>::type>
+inline R distance(point2d<T> const a, point2d<T> const b) {
+    return static_cast<R>(std::sqrt(distance(a, b)));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -34,6 +55,10 @@ struct range {
     }
 
     bool is_range() const {
+        return first <= last;
+    }
+
+    explicit operator bool() const {
         return first <= last;
     }
 
@@ -74,15 +99,9 @@ inline bool operator!=(range<T> const& a, range<U> const& b) {
     return !(a == b);
 }
 ////////////////////////////////////////////////////////////////////////////////
-// struct range;
-////////////////////////////////////////////////////////////////////////////////
 
-////////////////////////////////////////////////////////////////////////////////
 template <typename T>
 struct rect {
-    template <typename T>
-    friend std::ostream& operator<<(std::ostream& out, rect<T> const& r);
-
     typedef typename std::make_signed<T>::type   difference_t;
     typedef typename std::make_unsigned<T>::type size_t;
 
@@ -98,6 +117,15 @@ struct rect {
     rect(T left, T top, T right, T bottom)
         : left(left), top(top), right(right), bottom(bottom)
     {
+    }
+
+    friend std::ostream& operator<<(std::ostream& out, rect<T> const& r) {
+        return out
+            << "rect"                    << "\n"
+            << "--left   = " << r.left   << "\n"
+            << "--top    = " << r.top    << "\n"
+            << "--right  = " << r.right  << "\n"
+            << "--bottom = " << r.bottom << "\n"
     }
 
     bool is_rect() const {
@@ -140,17 +168,6 @@ struct rect {
 
     T left, top, right, bottom;
 };
-
-template <typename T>
-inline std::ostream& operator<<(std::ostream& out, rect<T> const& r) {
-    out << "rect("
-        << std::to_string(r.left)   << ", "
-        << std::to_string(r.top)    << ", "
-        << std::to_string(r.right)  << ", "
-        << std::to_string(r.bottom) << ")";
-
-    return out;
-}
 
 template <typename T, typename U, typename V>
 inline rect<T> translate(rect<T> const& r, U dx, V dy) {
@@ -223,3 +240,23 @@ template <> struct separate_rects<direction::east> {
     }
 };
 
+template <typename T>
+rect<T> separate_rects_toward(
+    direction const dir,
+    rect<T>   const a,
+    rect<T>   const b,
+    T         const padding = 0
+) {
+    switch (dir) {
+    case direction::north :
+        return separate_rects<direction::north>::get(a, b, padding);
+    case direction::south :
+        return separate_rects<direction::south>::get(a, b, padding);
+    case direction::west :
+        return separate_rects<direction::west>::get(a, b, padding);
+    case direction::east :
+        return separate_rects<direction::east>::get(a, b, padding);
+    default :
+        BK_ASSERT(false);
+    }
+}

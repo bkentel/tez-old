@@ -6,10 +6,8 @@ namespace {
 
     static auto const MIN_W = 3;
     static auto const MAX_W = 10;
-    static auto const MIN_H = 3;
+    static auto const MIN_H = 4;
     static auto const MAX_H = 10;
-
-    
 }
 
 simple_room_generator::simple_room_generator(random_wrapper<unsigned> random)

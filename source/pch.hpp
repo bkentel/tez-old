@@ -20,3 +20,37 @@
 #include <boost/exception/all.hpp>
 
 #include "assert.hpp"
+
+template <typename T>
+inline T clone(T const value) {
+    return value;
+}
+
+namespace std {
+
+template <typename T>
+auto inline cbegin(T& container) -> decltype(container.cbegin())
+{	// get beginning of sequence
+    return container.cbegin();
+}
+
+template <typename T>
+auto inline cbegin(T const& container) -> decltype(container.cbegin())
+{	// get beginning of sequence
+    return container.cbegin();
+}
+
+template <typename T>
+auto inline cend(T& container) -> decltype(container.cend())
+{	// get end of sequence
+    return container.cend();
+}
+
+template <typename T>
+auto inline cend(T const& container) -> decltype(container.cend())
+{	// get end of sequence
+    return container.cend();
+}
+
+
+} // std

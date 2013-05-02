@@ -99,20 +99,19 @@ void compound_room_generator::generate(grid2d<tile_category>& out) {
         return false;
     };
 
-    std::for_each(out.block_begin(fallback), out.block_end(fallback), [&](block<tile_category> const& b) {
-        auto const x = b.x;
-        auto const y = b.y;
+    std::for_each(
+        out.block_begin(fallback),
+        out.block_end(fallback),
+        [&](block<tile_category> const& b) {
+            auto const x = b.x;
+            auto const y = b.y;
 
-        if (b.here == tile_category::empty) {
-        } else if (ceiling_rule(b)) {
-            out.set(x, y, tile_category::ceiling);
-        } else if (b.n == tile_category::ceiling) {
-            out.set(x, y, tile_category::wall);
+            if (b.here == tile_category::empty) {
+            } else if (ceiling_rule(b)) {
+                out.set(x, y, tile_category::ceiling);
+            } else if (b.n == tile_category::ceiling) {
+                out.set(x, y, tile_category::wall);
+            }
         }
-
-        if (x == 0) std::cout << "\n";
-        std::cout << static_cast<char>(out.at(x, y));
-    });
-
-    std::cout << std::endl;
+    );
 }
