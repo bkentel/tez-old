@@ -5,6 +5,8 @@
 #include "room.hpp"
 #include "map.hpp"
 
+#include "room_generator.hpp" //temp
+
 namespace {
 
 static auto const PADDING = 2;
@@ -202,6 +204,84 @@ void map_layout::add_room(room r, random_t random) {
     }
 }
 
+static std::vector<point2d<unsigned>> path;
+
+bool make_connection(room const& r, map& m, std::default_random_engine& random) {   
+    std::uniform_int_distribution<> dir_dist(0, 3);
+    direction dir = [&]() -> direction {
+        switch (dir_dist(random)) {
+        case 0 : return direction::north;
+        case 1 : return direction::south;
+        case 2 : return direction::east;
+        case 3 : return direction::west;
+        }
+
+        return direction::none;
+    }();
+
+    auto gen = path_generator(dir);
+    auto p = r.find_connectable_point(make_random_wrapper(random), dir);
+
+    unsigned fail_count = 0;
+
+    //std::vector<point2d<unsigned>> path;
+    //path.reserve(32);
+    path.clear();
+    path.push_back(p);
+
+    bool found_path = false;
+
+    while (p.x > 0 && p.y > 0 && p.x < m.width() - 1 && p.y < m.height() - 1) {
+        auto const dir = gen(random);
+        auto const dx = get_x_vector(dir);
+        auto const dy = get_y_vector(dir);
+
+        auto const x = p.x + dx;
+        auto const y = p.y + dy;
+
+        auto const& type = m.at(x, y).type;
+
+        if (type == tile_category::corridor ||
+            type == tile_category::empty
+        ) {
+            path.emplace_back(x, y);
+        } else if (!r.bounds().contains(x, y)) {
+            path.emplace_back(x, y);
+            found_path = true;
+            break;
+        } else {
+            if (fail_count++ < 10) {
+                //std::cout << "try again\n";
+                continue;
+            } else {
+                //std::cout << "fail: count\n";
+                return false;
+            }
+        }
+        
+        p.x = x;
+        p.y = y;
+
+        fail_count = fail_count > 0 ? --fail_count : 0;
+    }
+
+    if (path.size() < 2 || !found_path) {
+        //std::cout << "fail: path\n";
+        return false;
+    }
+
+    m.at(path[0].x, path[0].y).type = tile_category::door;
+    
+    for (unsigned i = 1; i < path.size() - 1; ++i) {
+        m.at(path[i].x, path[i].y).type = tile_category::corridor;
+    }
+    
+    auto const last = path.size() - 1;
+    m.at(path[last].x, path[last].y).type = tile_category::door;
+
+    return true;
+}
+
 map map_layout::make_map() const {
     auto const dx = extent_x_.min;
     auto const dy = extent_y_.min;
@@ -212,6 +292,12 @@ map map_layout::make_map() const {
         result.add_room(r, 0 - dx, 0 - dy);
     }
 
+    std::default_random_engine random(1984);
+
+    for (auto const& r : rooms_) {
+        while(!make_connection(r, result, random));
+    }
+    
     return result;
 }
 

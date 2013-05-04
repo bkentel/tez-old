@@ -481,10 +481,8 @@ private:
     reference dereference() const {
         BK_ASSERT(offset_ >= 0);
 
-        auto const p = grid_->to_position(static_cast<size_t>(offset_));
-        pos_.x     = p.first;
-        pos_.y     = p.second;
-        pos_.value = &grid_->at(p);
+        std::tie(pos_.x, pos_.y) = grid_->to_position(static_cast<size_t>(offset_));
+        pos_.value = &grid_->at(pos_.x, pos_.y);
 
         return pos_;
     }

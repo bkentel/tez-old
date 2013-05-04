@@ -350,7 +350,8 @@
 ////}
 
 TEST(MapCreation, Test) {
-    std::default_random_engine engine(1984);
+    for(unsigned n = 0; n < 1000; ++n) {
+    std::default_random_engine engine(::GetTickCount());
     auto random = make_random_wrapper(engine);
 
     map_layout layout;
@@ -372,7 +373,8 @@ TEST(MapCreation, Test) {
     layout.normalize();
     auto test_map = layout.make_map();
 
-    std::cout << test_map;
+    //std::cout << test_map;
+    }
 }
 
 int main(int argc, char* argv[]) {

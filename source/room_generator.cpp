@@ -5,6 +5,24 @@
 
 #include <vector>
 
+unsigned const path_generator_dist<direction::north>::values[4] = {
+    80, 10, 20, 20
+};
+
+unsigned const path_generator_dist<direction::south>::values[4] = {
+    10, 80, 20, 20
+};
+
+unsigned const path_generator_dist<direction::east>::values[4] = {
+    20, 20, 80, 10
+};
+
+unsigned const path_generator_dist<direction::west>::values[4] = {
+    20, 20, 10, 80
+};
+
+/////
+
 simple_room_generator::simple_room_generator(random_t random)
     : generator(random)
 {
@@ -117,10 +135,6 @@ generator::grid_t make_compound_room_base(generator::random_t random) {
         range_x(p.x);
         range_y(p.y);
     }
-
-    //convert to the actual cell sizes
-    //range_x(range_x.min*cell_size);
-    //range_y(range_y.min*cell_size);
 
     auto const w = range_x.distance() + 1;
     auto const h = range_y.distance() + 1;

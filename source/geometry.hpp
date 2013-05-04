@@ -170,6 +170,17 @@ struct rect {
     size_t height() const { return bottom - top; }
 
     template <typename U>
+    bool contains(point2d<U> p) const {
+        return contains(p.x, p.y);
+    }
+
+    template <typename U, typename V>
+    bool contains(U x, V y) const {
+        return x >= left && x < right &&
+               y >= top  && y < bottom; 
+    }
+
+    template <typename U>
     bool intersects(rect<U> const& r) const {
         return !(
             (r.right  < left)   ||

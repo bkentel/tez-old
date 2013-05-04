@@ -13,6 +13,7 @@ enum class tile_category : uint8_t {
     water_shallow = '=',
     water_deep    = '~',
     door          = 'D',
+    corridor      = '+',
 };
 
 inline std::ostream& operator<<(std::ostream& out, tile_category const t) {
