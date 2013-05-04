@@ -35,7 +35,7 @@ rect_t find_rect_at(
 
         unsigned count = 0;
         for (auto const& r : rooms) {
-            auto const& other = r->bounds();
+            auto const& other = r.bounds();
                 
             if (intersection_of(where, other).is_rect()) {
                 intersections[count] = &other;
@@ -130,9 +130,9 @@ rect_t get_rect_relative_to(
 } //namespace
 
 //==============================================================================
-//! Layout the list of rooms given by [rooms] such that no rooms overlap.
+//! Add [r] to the layout such that it intersects no existing rooms.
 //==============================================================================
-void map_layout::add_room(room_ptr room, random_t random) {
+void map_layout::add_room(room r, random_t random) {
     //--------------------------------------------------------------------------
     // Add candidates with [r] as the source for all directions other than
     // [from].
@@ -157,8 +157,8 @@ void map_layout::add_room(room_ptr room, random_t random) {
     //--------------------------------------------------------------------------
     // Finalize the placement of the room [r].
     //--------------------------------------------------------------------------
-    auto const add_room = [&](room_ptr r, rect_t const where) {
-        r->translate_to(where.left, where.top);
+    auto const add_room = [&](room& r, rect_t const where) {
+        r.translate_to(where.left, where.top);
         rooms_.emplace_back(std::move(r));
 
         extent_x_(where.left);
@@ -187,14 +187,14 @@ void map_layout::add_room(room_ptr room, random_t random) {
         //try to place the room
         auto const result_rect = find_rect_at(
             get_rect_relative_to(
-                candidate.first, candidate.second, *room
+                candidate.first, candidate.second, r
             ),
             rooms_
         );
 
         //ok
         if (result_rect.is_rect()) {
-            add_room(std::move(room), result_rect);
+            add_room(r, result_rect);
             add_candidates(opposite(candidate.first), result_rect);
 
             break;
@@ -209,7 +209,7 @@ map map_layout::make_map() const {
     auto result = map(extent_x_.distance(), extent_y_.distance());
 
     for (auto const& r : rooms_) {
-        result.write(*r, 0 - dx, 0 - dy);
+        result.add_room(r, 0 - dx, 0 - dy);
     }
 
     return result;
@@ -220,7 +220,7 @@ void map_layout::normalize() {
     auto const dy = extent_y_.min;
 
     for (auto& r : rooms_) {
-        r->translate_by(0 - dx, 0 - dy);
+        r.translate_by(0 - dx, 0 - dy);
     }
 
     extent_x_.min =  0;

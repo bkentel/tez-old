@@ -1,6 +1,10 @@
 #include "pch.hpp"
 #include <gtest/gtest.h>
 
+#include "map_layout.hpp"
+#include "room_generator.hpp"
+#include "map.hpp"
+
 //#include "geometry.hpp"
 //
 //#include "map.hpp"
@@ -345,6 +349,31 @@
 ////    EXPECT_EQ(r1, r5);
 ////}
 
+TEST(MapCreation, Test) {
+    std::default_random_engine engine(1984);
+    auto random = make_random_wrapper(engine);
+
+    map_layout layout;
+
+    for (int i = 0; i < 20; ++i) {
+        if (i % 4 == 0) {
+            layout.add_room(
+                compound_room_generator(random),
+                random
+            );
+        } else {
+            layout.add_room(
+                simple_room_generator(random),
+                random
+            );
+        }
+    }
+
+    layout.normalize();
+    auto test_map = layout.make_map();
+
+    std::cout << test_map;
+}
 
 int main(int argc, char* argv[]) {
     ::testing::InitGoogleTest(&argc, argv);

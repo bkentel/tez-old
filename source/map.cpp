@@ -7,12 +7,15 @@ map::map(unsigned width, unsigned height)
 {
 }
 
-void map::write(room const& r, signed dx, signed dy) {
-    data_.transfer(r.data_, 0, 0, r.width(), r.height(), r.left() + dx, r.top() + dy,
-        [](tile_category c) {
-            tile_data result;
-            result.type = c;
-            return result;
+void map::add_room(room const& r, signed dx, signed dy) {
+    grid_copy_transform(
+        r,
+        0, 0,
+        r.width(), r.height(),
+        data_,
+        r.left() + dx, r.top() + dy,
+        [](tile_category const& src_cat, tile_data& dest_data) {
+            dest_data.type = src_cat;
         }
     );
 }

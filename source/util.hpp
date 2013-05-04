@@ -2,6 +2,27 @@
 
 #include <limits>
 #include <functional>
+#include <type_traits>
+
+template <typename T, bool Const = false, bool Volatile = false>
+struct make_cv_if {
+    typedef T type;
+};
+
+template <typename T>
+struct make_cv_if<T, true, false> {
+    typedef typename std::add_const<T>::type type;
+};
+
+template <typename T>
+struct make_cv_if<T, false, true> {
+    typedef typename std::add_volatile<T>::type type;
+};
+
+template <typename T>
+struct make_cv_if<T, true, true> {
+    typedef typename std::add_cv<T>::type type;
+};
 
 template <typename T>
 T min(T const head) {
@@ -26,6 +47,12 @@ struct min_max {
     {
     }
 
+    explicit min_max(T value)
+        : min(value)
+        , max(value)
+    {
+    }
+
     void operator()(T value) {
         min = min > value ? value : min;
         max = max < value ? value : max;
@@ -45,26 +72,34 @@ struct min_max {
 //! Wraps a random number generator to abstract away the differences.
 //! @tparam T a numeric type.
 //==============================================================================
-template <typename T = int>
-struct random_wrapper {
+template <typename T>
+class random_wrapper {
+    template <typename T>
+    friend random_wrapper<typename std::result_of<T()>::type> make_random_wrapper(T&);
+public:
     typedef T result_type;
      
-    template <typename U>
-    random_wrapper(U& gen)
-        : gen_([&] { return gen(); })
-    {
-        static_assert(
-            std::is_same<result_type, U::result_type>::value,
-            "type mismatch"
-        );
-    }
-
     T operator()() {
         return gen_();
     }
 
     static T min() { return std::numeric_limits<T>::min(); }
     static T max() { return std::numeric_limits<T>::max(); }
+private:
+    template <typename U>
+    random_wrapper(U&& gen, bool) //the extra bool is to avoid implicit conversion
+        : gen_([&] { return gen(); })
+    {
+    }
 
     std::function<T ()> gen_;
 };
+
+template <typename T>
+inline auto make_random_wrapper(T& random)
+    -> random_wrapper<typename std::result_of<T()>::type>
+{
+    return random_wrapper<decltype(random())>(
+        random, true
+    );
+}

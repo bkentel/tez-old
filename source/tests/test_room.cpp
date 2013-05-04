@@ -3,8 +3,6 @@
 
 #include <gtest/gtest.h>
 
-#include "room_compound.hpp"
-
 class RoomTest : public ::testing::Test {
 public :
     struct test_generator {
@@ -13,14 +11,8 @@ public :
         {
         }
 
-        unsigned width()  const { return w; }
-        unsigned height() const { return h; }
-        
-        tile_category default() const { return value; }
-
-        void generate(grid2d<tile_category>& grid) {
-            EXPECT_EQ(w, grid.width());
-            EXPECT_EQ(h, grid.height());
+        grid2d<tile_category> generate() {
+            return grid2d<tile_category>(w, h, value);
         }
 
         tile_category value;
@@ -28,13 +20,38 @@ public :
     };
 };
 
+TEST_F(RoomTest, Iterator) {
+    static const unsigned      W = 5;
+    static const unsigned      H = 10;
+    static tile_category const V = tile_category::floor;
+
+    room test_room = test_generator(V, W, H);
+
+    unsigned count = 0;
+    for (auto& i : test_room) {
+        EXPECT_EQ(tile_category::floor, *i);
+        
+        i = tile_category::empty;
+        
+        count++;
+    }
+
+    EXPECT_EQ(W*H, count);
+    
+    [](room const& r) {
+        for (auto const& i : r) {
+            EXPECT_EQ(tile_category::empty, *i);
+        }
+    }(test_room);
+}
+
 TEST_F(RoomTest, FindConnectable) {
     static const unsigned      W  = 5;
     static const unsigned      H = 10;
     static tile_category const V  = tile_category::floor;
 
     std::default_random_engine engine(1984);
-    auto random = random_wrapper<unsigned>(engine);
+    auto random = make_random_wrapper(engine);
 
     auto test_room = room(test_generator(V, W, H));
 

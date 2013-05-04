@@ -2,18 +2,22 @@
 
 #include "config.hpp"
 #include "assert.hpp"
+#include "util.hpp"
 
 #include <memory>
 #include <utility>
 #include <vector>
-#include <iterator>
+#include <type_traits>
+#include <algorithm>
 
 #include <boost/iterator/iterator_facade.hpp>
 
-template <typename>       class grid2d;
-template <typename, bool> class grid_block;
-template <typename, bool> class block_iterator;
-template <typename>       class block_iterator_adapter;
+template <typename>       class  grid2d;
+template <typename>       struct grid_position;
+template <typename>       class  grid_iterator;
+template <typename, bool> class  grid_block;
+template <typename, bool> class  block_iterator;
+template <typename>       class  block_iterator_adapter;
 
 //==============================================================================
 //! A 2D grid of values.
@@ -34,11 +38,13 @@ public:
     typedef typename storage::pointer         pointer;
     typedef typename storage::const_pointer   const_pointer;
 
-    typedef typename storage::iterator        iterator;
-    typedef typename storage::const_iterator  const_iterator;
+    typedef typename grid_iterator<T>        iterator;
+    typedef typename grid_iterator<T const>  const_iterator;
 
     typedef std::pair<unsigned, unsigned>     position;
     typedef size_t                            index;
+    //--------------------------------------------------------------------------
+
     //--------------------------------------------------------------------------
     grid2d()
         : width_(0)
@@ -146,16 +152,25 @@ public:
         result.height_ = height_;
 
         return result;
-    }    
+    }
+
     //--------------------------------------------------------------------------
-    iterator begin() { return std::begin(data_); }
-    iterator end()   { return std::end(data_); }
+    block_iterator_adapter<grid2d> block_iterator() {
+        return block_iterator_adapter<grid2d>(*this);
+    }
+
+    block_iterator_adapter<grid2d const> block_iterator() const {
+        return block_iterator_adapter<grid2d const>(*this);
+    }
+    //--------------------------------------------------------------------------
+    iterator begin() { return iterator(this, 0); }
+    iterator end()   { return iterator(this, size()); }
 
     const_iterator begin() const { return cbegin(); }
     const_iterator end()   const { return cend(); }
 
-    const_iterator cbegin() const { return std::cbegin(data_); }
-    const_iterator cend()   const { return std::cend(data_); }
+    const_iterator cbegin() const { return const_iterator(this, 0); }
+    const_iterator cend()   const { return const_iterator(this, size()); }
 
     position to_position(iterator const& it) const {
         return to_position_(std::distance(begin(), it));
@@ -220,6 +235,60 @@ private:
     storage  data_;
 }; //class grid2d
 
+template <typename T, typename U>
+static void grid_copy(
+    T const& src,
+    unsigned const   src_x,
+    unsigned const   src_y,
+    unsigned const   w,
+    unsigned const   h,
+    U&       dest,
+    unsigned const   dest_x = 0,
+    unsigned const   dest_y = 0
+) {
+    BK_ASSERT(src_x + w <= src.width());
+    BK_ASSERT(src_y + h <= src.height());
+
+    BK_ASSERT(dest_x + w <= dest.width());
+    BK_ASSERT(dest_y + h <= dest.height());
+
+    for (unsigned y = 0; y < h; ++y) {
+        std::copy_n(
+            &src.at(src_x, src_y + y),
+            w,
+            &dest.at(dest_x, dest_y + y)
+        );
+    }
+}
+
+template <typename T, typename U, typename F>
+static void grid_copy_transform(
+    T const& src,
+    unsigned const   src_x,
+    unsigned const   src_y,
+    unsigned const   w,
+    unsigned const   h,
+    U&       dest,
+    unsigned const   dest_x,
+    unsigned const   dest_y,
+    F function
+) {
+    BK_ASSERT(src_x + w <= src.width());
+    BK_ASSERT(src_y + h <= src.height());
+
+    BK_ASSERT(dest_x + w <= dest.width());
+    BK_ASSERT(dest_y + h <= dest.height());
+
+    for (unsigned y = 0; y < h; ++y) {
+        for (unsigned x = 0; x < w; ++x) {
+            function(
+                src.at(src_x + x, src_y + y),
+                dest.at(dest_x + x, dest_y + y)
+            );
+        }
+    }
+}
+
 template <typename T>
 inline void swap(grid2d<T>& a, grid2d<T>& b) {
     a.swap(b);
@@ -248,22 +317,13 @@ inline grid2d<T> clone(grid2d<T> const& grid) {
 //! outside the grid2d.
 //!
 //==============================================================================
-template <typename T, bool Const>
+template <typename T, bool Const = false>
 class grid_block {
     template <typename, bool> friend class grid_block;
 public:
-    template <typename U>
-    struct other_t {
-        typedef typename std::conditional<
-            Const,
-            grid2d<U> const,
-            grid2d<U>
-        >::type type;
-    };
-
-    typedef typename other_t<T>::type         grid_type;
-    typedef typename grid_type::pointer       pointer;
-    typedef typename grid_type::const_pointer const_pointer;
+    typedef typename make_cv_if<grid2d<T>, Const>::type grid_type;
+    typedef typename grid_type::pointer         pointer;
+    typedef typename grid_type::const_pointer   const_pointer;
 
     grid_block()
         : grid_(nullptr)
@@ -339,17 +399,114 @@ private:
             : nullptr;  
     }
 }; //class grid_block
+//==============================================================================
 
 //==============================================================================
-//! Iterator for block by block access.
+//! Iterator for element by element access.
 //==============================================================================
-template <typename T, bool Const>
-struct block_iterator_base {
+template <typename T>
+struct grid_position {
+    unsigned x, y;
+    T* value;
+
+    operator T&() const { return *value; }
+    T& operator*() const {return *value; }
+    T* operator->() const { return value; }
+
+    grid_position& operator=(T const& rhs) {
+        *value = rhs;
+        return *this;
+    }
+};
+
+template <typename T>
+class grid_iterator
+    : public boost::iterator_facade<
+        grid_iterator<T>,
+        grid_position<T>,
+        boost::random_access_traversal_tag
+      >
+{
+public:
     typedef typename std::conditional<
-        Const,
-        grid2d<T> const,
+        std::is_const<T>::value,
+        grid2d<
+            typename std::remove_const<T>::type
+        > const,
         grid2d<T>
     >::type grid_type;
+
+    grid_iterator()
+        : grid_(nullptr)
+        , offset_(0)
+    {
+    }
+
+    grid_iterator(grid_type* grid, difference_type offset)
+        : grid_(grid)
+        , offset_(offset)
+    {
+    }
+
+    template <typename U>
+    grid_iterator(grid_iterator<U> const& other,
+        typename std::enable_if<
+            std::is_convertible<U*, T*>::value
+        >::type* = nullptr
+    )
+        : grid_iterator(other.grid_, other.offset_)
+    {
+    }
+private:
+    friend class boost::iterator_core_access;
+    template <typename> friend class grid_iterator;
+
+    template <typename U>
+    bool equal(grid_iterator<U> const& other) const {
+        return (grid_ == other.grid_) && (offset_ == other.offset_);
+    }
+
+    void increment() {
+        ++offset_;
+    }
+
+    void decrement() {
+        --offset_;
+    }
+
+    void advance(difference_type n) {
+        offset_ += n;
+    }
+
+    reference dereference() const {
+        BK_ASSERT(offset_ >= 0);
+
+        auto const p = grid_->to_position(static_cast<size_t>(offset_));
+        pos_.x     = p.first;
+        pos_.y     = p.second;
+        pos_.value = &grid_->at(p);
+
+        return pos_;
+    }
+
+    template <typename U>
+    difference_type distance_to(grid_iterator<U> const& other) const {
+        BK_ASSERT(grid_ == other.grid_);
+        return other.offset_ - offset_;
+    }
+
+    grid_type*      grid_;
+    difference_type offset_;
+    
+    mutable value_type pos_;
+};
+
+
+namespace detail {
+
+template <typename T, bool Const = false>
+struct block_iterator_base {
+    typedef typename make_cv_if<grid2d<T>, Const>::type grid_type;
     
     block_iterator_base(grid_type* data = nullptr, ptrdiff_t  offset = 0)
         : data_(data), offset_(offset)
@@ -361,14 +518,19 @@ struct block_iterator_base {
     mutable grid_block<T, Const> block_;
 };
 
-template <typename T, bool Const>
+} //namespace detail
+
+//==============================================================================
+//! Iterator for block by block access.
+//==============================================================================
+template <typename T, bool Const = false>
 class block_iterator
     : public boost::iterator_facade<
         block_iterator<T, Const>,
         grid_block<T, Const>,
         boost::random_access_traversal_tag
       >
-    , public block_iterator_base<T, Const>
+    , public detail::block_iterator_base<T, Const>
 {
 public:
     block_iterator()
@@ -446,277 +608,3 @@ public:
 private:
     T* grid_;
 };
-
-//==============================================================================
-//! Helper function to create a block_iterator_adapter.
-//==============================================================================
-template <typename T>
-auto make_block_iterator_adapter(T&& grid)
-    -> block_iterator_adapter<typename std::remove_reference<T>::type>
-{
-    return block_iterator_adapter<typename std::remove_reference<T>::type>(grid);
-}
-
-//template <typename U, typename F>
-//inline void transfer(
-//    grid2d<U> const& src,
-//    unsigned src_x,
-//    unsigned src_y,
-//    unsigned src_w,
-//    unsigned src_h,
-//    unsigned dest_x,
-//    unsigned dest_y,
-//    F&& function
-//) {
-//    BK_ASSERT(src_x + src_w <= src.width());
-//    BK_ASSERT(src_y + src_h <= src.height());
-//
-//    BK_ASSERT(dest_x + src_w <= width());
-//    BK_ASSERT(dest_y + src_h <= height());
-//
-//    for (unsigned y = 0; y < src_h; ++y) {
-//        for (unsigned x = 0; x < src_w; ++x) {
-//            set(
-//                dest_x + x,
-//                dest_y + y, 
-//                function(
-//                    src.at(src_x + x, src_y + y)
-//                )
-//            );
-//        }
-//    }
-//}
-
-////==============================================================================
-////! Iterator for element by element access.
-////==============================================================================
-//template <typename T>
-//class grid2d_iterator
-//    : public std::iterator<std::random_access_iterator_tag, T>
-//{
-//    template <typename U> friend class grid2d;
-//
-//    template <typename A, typename B>
-//    friend bool operator==(grid2d_iterator<A> const& a, grid2d_iterator<B> const& b);
-//
-//    template <typename A, typename B>
-//    friend bool operator!=(grid2d_iterator<A> const& a, grid2d_iterator<B> const& b);
-//public:
-//    template <typename U>
-//    grid2d_iterator(grid2d_iterator<U> const& rhs)
-//        : data_(rhs.data_)
-//        , width_(rhs.width_)
-//        , height_(rhs.height_)
-//        , offset_(rhs.offset_)
-//    {
-//    }
-//   
-//    template <typename U>
-//    grid2d_iterator& operator=(grid2d_iterator<U> const& rhs)
-//    {
-//        data_   = rhs.data_;
-//        width_  = rhs.width_;
-//        height_ = rhs.height_;
-//        offset_ = rhs.offset_;
-//    
-//        return *this;   
-//    }
-//
-//    grid2d_iterator& operator++() {
-//        return *this += 1;
-//    }
-//
-//    grid2d_iterator& operator++(int) {
-//        return ++(*this);
-//    }
-//
-//    grid2d_iterator& operator--() {
-//        return *this -= 1;
-//    }
-//
-//    grid2d_iterator& operator--(int) {
-//        return --(*this);
-//    }
-//
-//    grid2d_iterator operator+(difference_type n) const {
-//        return room_iterator(*this) += n;
-//    }
-//
-//    grid2d_iterator operator-(difference_type n) const {
-//        return room_iterator(*this) -= n;
-//    }
-//
-//    template <typename U>
-//    difference_type operator-(grid2d_iterator<U> const& rhs) const {
-//        BK_ASSERT(data_ == rhs.data_);
-//        return offset_ - rhs.offset_;
-//    }
-//
-//    grid2d_iterator& operator+=(difference_type n) {
-//        BK_ASSERT(n >= 0);
-//        BK_ASSERT(offset_ + n <= size_());
-//
-//        offset_ += n;
-//        return *this;
-//    }
-//
-//    grid2d_iterator& operator-=(difference_type n) {
-//        BK_ASSERT(n >= 0);
-//        BK_ASSERT(offset_ >= static_cast<size_t>(n));
-//    
-//        offset_ -= n;
-//        return *this;
-//    }
-//
-//    reference operator*() const {
-//        return *at_(offset_);
-//    }
-//
-//    pointer operator->() const {
-//        return at_(offset_);
-//    }
-//
-//    reference operator[](difference_type n) const {
-//        return *at_(offset_ + n);
-//    }
-//
-//    point2d<unsigned> position() const {
-//        return point2d<unsigned>(offset_ % width_, offset_ / width_);
-//    }
-//private:
-//    grid2d_iterator(pointer data, size_t width, size_t height, size_t offset)
-//        : data_(data)
-//        , width_(width)
-//        , height_(height)
-//        , offset_(offset)
-//    {
-//        BK_ASSERT(offset_ <= size_());
-//    }
-//
-//    grid2d_iterator(grid2d_iterator& other, size_t offset)
-//        : grid2d_iterator(other.data_, other.width_, other.height_, offset)
-//    {
-//    }
-//
-//    size_t size_() const {
-//        return width_ * height_;
-//    }
-//    
-//    pointer at_(size_t const offset) const {
-//        BK_ASSERT(offset < size_());
-//
-//        return data_ + offset;
-//    }
-//
-//    pointer data_;
-//    size_t  width_, height_;
-//    size_t  offset_;
-//};
-//
-//template <typename A, typename B>
-//inline bool operator<(grid2d_iterator<A> const& a, grid2d_iterator<B> const& b) {
-//    BK_ASSERT(a.data_ == b.data_);
-//    return a.offset_ < b.offset_;
-//}
-//
-//template <typename A, typename B>
-//inline bool operator==(grid2d_iterator<A> const& a, grid2d_iterator<B> const& b) {
-//    return (a.data_   == b.data_)   && 
-//           (a.width_  == b.width_)  &&
-//           (a.height_ == b.height_) &&
-//           (a.offset_ == b.offset_);
-//}
-//
-//template <typename A, typename B>
-//inline bool operator!=(grid2d_iterator<A> const& a, grid2d_iterator<B> const& b) {
-//    return !(a == b);
-//}
-
-//template <typename T>
-//class const_grid_block {
-//    template <typename U, typename V>
-//    friend bool operator==(const_grid_block<U> const& a, const_grid_block<V> const& b);
-//
-//    template <typename U, typename V>
-//    friend bool operator==(const_grid_block<U> const& a, grid_block<V> const& b);
-//
-//    template <typename U, typename V>
-//    friend bool operator==(grid_block<U> const& a, const_grid_block<V> const& b);
-//public:
-//    typedef grid2d<T> const                   grid_type;
-//    typedef typename grid2d<T>::const_pointer pointer;
-//
-//    const_grid_block(grid_type& grid, unsigned x, unsigned y)
-//        : grid_(std::addressof(grid))
-//        , x(x)
-//        , y(y)
-//    {
-//        BK_ASSERT(x < grid.width());
-//        BK_ASSERT(y < grid.height());
-//    }
-//    
-//    const_grid_block(grid_block& other)
-//        : const_grid_block(*other.grid_, other.x, other.y)
-//    {
-//    }
-//
-//    pointer here()       const { return grid_->at(x, y); }
-//    pointer north()      const { return get( 0, -1); }
-//    pointer south()      const { return get( 0,  1); }
-//    pointer east()       const { return get( 1,  0); }
-//    pointer west()       const { return get(-1,  0); }
-//    pointer north_east() const { return get( 1, -1); }
-//    pointer north_west() const { return get(-1, -1); }
-//    pointer south_east() const { return get( 1,  1); }
-//    pointer south_west() const { return get(-1,  1); }
-//
-//    unsigned x, y;
-//private:
-//    const_grid_block() BK_DELETE;
-//
-//    grid_type* grid_;
-//
-//    pointer get_(signed dx, signed dy) const {
-//        //allow the overflow
-//        grid_->is_valid_position(x+dx, y+dy)
-//            ? grid_->at(x+dx, y+dy);
-//            : nullptr;
-//    }
-//};
-
-
-
-//template <typename T, typename U>
-//inline bool operator==(const_grid_block<T> const& a, grid_block<U> const& b) {
-//    return (a.grid_ == b.grid_) && (a.x == b.x) && (a.y == b.y);
-//}
-//
-//template <typename T, typename U>
-//inline bool operator==(grid_block<T> const& a, const_grid_block<U> const& b) {
-//    return (a.grid_ == b.grid_) && (a.x == b.x) && (a.y == b.y);
-//}
-//
-//template <typename T, typename U>
-//inline bool operator==(const_grid_block<T> const& a, const_grid_block<U> const& b) {
-//    return (a.grid_ == b.grid_) && (a.x == b.x) && (a.y == b.y);
-//}
-//
-//template <typename T, typename U>
-//inline bool operator!=(grid_block<T> const& a, grid_block<U> const& b) {
-//    return !(a == b);
-//}
-//
-//template <typename T, typename U>
-//inline bool operator!=(const_grid_block<T> const& a, grid_block<U> const& b) {
-//    return !(a == b);
-//}
-//
-//template <typename T, typename U>
-//inline bool operator!=(grid_block<T> const& a, const_grid_block<U> const& b) {
-//    return !(a == b);
-//}
-//
-//template <typename T, typename U>
-//inline bool operator!=(const_grid_block<T> const& a, const_grid_block<U> const& b) {
-//    return !(a == b);
-//}

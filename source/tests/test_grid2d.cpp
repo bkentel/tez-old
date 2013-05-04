@@ -19,39 +19,42 @@ public :
 
 } //namespace
 
-TEST_F(Grid2DTest, BlockIterators) {
-    typedef std::vector<int>::value_type t1;
-    typedef std::vector<int const>::value_type t2;
+TEST_F(Grid2DTest, GridCopy) {
+    grid_t const src_grid(WIDTH, HEIGHT, VALUE);
+    grid_t       dest_grid(WIDTH, HEIGHT, 0);
 
-    static_assert(!std::is_same<t1, t2>::value, "hmmm");
+    grid_copy(src_grid, 1, 1, WIDTH - 2, HEIGHT - 2, dest_grid, 1, 1);
 
-    t1 a = 0;
-    t2 b = 1;
+    for (auto const& i : dest_grid) {
+        if (
+            (i.x == 0) ||
+            (i.y == 0) ||
+            (i.x == WIDTH  - 1) ||
+            (i.y == HEIGHT - 1)
+        ) {
+            EXPECT_EQ(0, i);
+        } else {
+            EXPECT_EQ(VALUE, i);
+        }
+    }
+}
 
-    a = b;
-    b = a;
+TEST_F(Grid2DTest, GridCopyFail) {
+    grid_t const src_grid(WIDTH, HEIGHT, VALUE);
+    grid_t       dest_grid(WIDTH, HEIGHT, 0);
 
-    grid_t       grid_a;
-    auto&        grid_b = grid_a;
-    auto const&  grid_c = grid_a;
-    grid_t const grid_d;
+    ::BK_TEST_BREAK_ON_ASSERT = false;
+    {
+        BK_ON_SCOPE_EXIT({
+            ::BK_TEST_BREAK_ON_ASSERT = true;
+        });
 
-    typedef grid2d<int const> cgrid_t;
-
-    grid2d<int const>       grid_e;
-    auto&         grid_f = grid_e;
-    auto const&   grid_g = grid_e;
-    cgrid_t const grid_h;
-
-    for (auto const& i : make_block_iterator_adapter(grid_a)) { BK_UNUSED(i); }
-    for (auto const& i : make_block_iterator_adapter(grid_b)) { BK_UNUSED(i); }
-    for (auto const& i : make_block_iterator_adapter(grid_c)) { BK_UNUSED(i); }
-    for (auto const& i : make_block_iterator_adapter(grid_d)) { BK_UNUSED(i); }
-    for (auto const& i : make_block_iterator_adapter(grid_e)) { BK_UNUSED(i); }
-    for (auto const& i : make_block_iterator_adapter(grid_f)) { BK_UNUSED(i); }
-    for (auto const& i : make_block_iterator_adapter(grid_g)) { BK_UNUSED(i); }
-    for (auto const& i : make_block_iterator_adapter(grid_h)) { BK_UNUSED(i); }
-
+        EXPECT_THROW(grid_copy(src_grid, 1, 1, WIDTH,     HEIGHT,     dest_grid, 0, 0), assertion_failure);
+        EXPECT_THROW(grid_copy(src_grid, 0, 0, WIDTH,     HEIGHT,     dest_grid, 1, 1), assertion_failure);
+        EXPECT_THROW(grid_copy(src_grid, 0, 0, WIDTH + 1, HEIGHT,     dest_grid, 0, 0), assertion_failure);
+        EXPECT_THROW(grid_copy(src_grid, 0, 0, WIDTH,     HEIGHT + 1, dest_grid, 0, 0), assertion_failure);
+        EXPECT_THROW(grid_copy(src_grid, 0, 0, WIDTH + 1, HEIGHT + 1, dest_grid, 0, 0), assertion_failure);
+    }
 }
 
 TEST_F(Grid2DTest, DefaultConstructor) {
@@ -77,7 +80,7 @@ TEST_F(Grid2DTest, DefaultConstructor) {
         );
     }
 
-    for (auto const& block : make_block_iterator_adapter(grid)) {
+    for (auto const& block : grid.block_iterator()) {
         BK_UNUSED(block);
     }
 
@@ -89,7 +92,7 @@ TEST_F(Grid2DTest, DefaultConstructor) {
 TEST_F(Grid2DTest, BlockIterator) {
     auto const grid = grid_t(WIDTH, HEIGHT, VALUE);
 
-    for (auto const& block : make_block_iterator_adapter(grid)) {
+    for (auto const& block : grid.block_iterator()) {
         EXPECT_NE(nullptr, block.here());
         EXPECT_EQ(VALUE, *block.here());
 

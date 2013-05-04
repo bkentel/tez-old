@@ -4,24 +4,9 @@
 #include "geometry.hpp"
 #include "grid2d.hpp"
 #include "util.hpp"
+#include "tile_category.hpp"
 
 #include <functional>
-
-//! Tile categories used in map generation.
-enum class tile_category : uint8_t {
-    empty         = ' ',
-    wall          = '|',
-    ceiling       = '#',
-    floor         = '.',
-    pit           = '_',
-    water_shallow = '=',
-    water_deep    = '~',
-    door          = 'D',
-};
-
-inline std::ostream& operator<<(std::ostream& out, tile_category const t) {
-    return out << static_cast<char>(t);
-}
 
 class map;
 
@@ -34,34 +19,16 @@ public:
     typedef rect<signed>          rect_t;
     typedef point2d<unsigned>     point_t;
     typedef grid2d<tile_category> grid_t;
-    typedef block<tile_category>  block_t;
 
     typedef grid_t::iterator       iterator;
-    typedef grid_t::block_iterator block_iterator;
-
-    block_iterator block_begin(tile_category fallback = tile_category::empty) {
-        return data_.block_begin(fallback);
-    }
-
-    block_iterator block_end(tile_category fallback = tile_category::empty) {
-        return data_.block_end(fallback);
-    }
-
-    iterator begin() {
-        return data_.begin();
-    }
-
-    iterator end() {
-        return data_.end();
-    }
-
+    typedef grid_t::const_iterator const_iterator;
+    //--------------------------------------------------------------------------
     template <typename T>
-    explicit room(T&& generator)
-        : rect_(0, 0, generator.width(), generator.height())
-        , data_(generator.width(), generator.height(), generator.default())
+    room(T&& generator)
+        : data_(generator.generate())
+        , rect_(0, 0, data_.width(), data_.height())
     {
         BK_ASSERT(rect_.is_rect());
-        generator.generate(data_);
     }
 
     room(room&& other)
@@ -69,7 +36,21 @@ public:
         , data_(std::move(other.data_))
     {
     }
+    //--------------------------------------------------------------------------
+    block_iterator_adapter<grid_t> block_iterator() {
+        return block_iterator_adapter<grid_t>(data_);
+    }
 
+    block_iterator_adapter<grid_t const> block_iterator() const {
+        return block_iterator_adapter<grid_t const>(data_);
+    }
+    //--------------------------------------------------------------------------
+    iterator begin() { return data_.begin(); }
+    iterator end()   { return data_.end(); }
+
+    const_iterator begin() const { return data_.begin(); }
+    const_iterator end()   const { return data_.end(); }
+    //--------------------------------------------------------------------------
     room& operator=(room&& rhs) {
         swap(rhs);
         return *this;
@@ -81,7 +62,7 @@ public:
         swap(rect_, other.rect_);
         swap(data_, other.data_);
     }
-
+    //--------------------------------------------------------------------------
     unsigned width()  const { return rect_.width(); }
     unsigned height() const { return rect_.height(); }
 
@@ -93,7 +74,7 @@ public:
     rect_t const& bounds() const {
         return rect_;
     }
-
+    //--------------------------------------------------------------------------
     void translate_by(signed dx, signed dy) {
         rect_.move_by(dx, dy);
     }
@@ -101,29 +82,22 @@ public:
     void translate_to(signed x, signed y) {
         rect_.move_to(x, y);
     }
-
+    //--------------------------------------------------------------------------
     tile_category at(unsigned x, unsigned y) const {
         return data_.at(x, y);
     }
     
-    void set(unsigned x, unsigned y, tile_category value) {
-        data_.set(x, y, value);
+    tile_category& at(unsigned x, unsigned y) {
+        return data_.at(x, y);
     }
-
-    block_t block_at(
-        unsigned x, unsigned y,
-        tile_category fallback = tile_category::empty
-    ) const {
-        return block_t(data_, x, y, fallback);
-    }
-
+    
     point_t find_connectable_point(random_wrapper<unsigned> random, direction dir) const;
 private:
     room(room const&)            BK_DELETE;
     room& operator=(room const&) BK_DELETE;
 
+    grid_t data_;    
     rect_t rect_;
-    grid_t data_;
 };
 
 inline void swap(room& a, room& b) {

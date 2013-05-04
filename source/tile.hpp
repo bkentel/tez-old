@@ -1,11 +1,9 @@
 #pragma once
 
-#include "types.hpp"
-#include "assert.hpp"
-#include "grid2d.hpp"
+#include "tile_category.hpp"
 
-#include "room.hpp" //tile_category
 #include <memory>
+#include <cstdint>
 
 struct tile_info {
 };
@@ -14,16 +12,15 @@ class tile_data {
 public:
     tile_data()
         : info(nullptr)
-        , texture_id(0)
         , type(tile_category::empty)
-        
+        , texture_id(0)
     {
     }
 
     tile_data(tile_data&& other)
         : info(std::move(other.info))
-        , texture_id(other.texture_id)
         , type(other.type)        
+        , texture_id(other.texture_id)
     {
     }
 
@@ -43,12 +40,16 @@ public:
     typedef std::unique_ptr<tile_info> info_ptr;
 
     info_ptr      info;
-    uint32_t      texture_id;
+    uint32_t      reserved1;
     tile_category type;
+    uint8_t       reserved0;
+    uint16_t      texture_id;
 private:
     tile_data(tile_data const&)            BK_DELETE;
     tile_data& operator=(tile_data const&) BK_DELETE;
 };
+
+static_assert(sizeof(tile_data) == 16, "unexpected size");
 
 inline void swap(tile_data& a, tile_data& b) {
     a.swap(b);

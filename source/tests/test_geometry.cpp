@@ -21,7 +21,38 @@ TEST(Rect, IsRect) {
     EXPECT_TRUE(rect_t(0, 0, 1, 1).is_rect());
 }
 
-TEST(Rect, Separate) {
+TEST(Rect, SeparateNoIntersect) {
+    static auto const WB = 5;
+    static auto const HB = 5;
+
+    static auto const WA = 3;
+    static auto const HA = 3;
+
+    rect_t const a(point_t(10, 10), WA, HA);
+    rect_t const b(point_t(0, 0), WB, HB);    
+
+    EXPECT_EQ(
+        b.top,
+        separate_rects_toward(direction::north, a, b).bottom
+    );
+
+    EXPECT_EQ(
+        b.left,
+        separate_rects_toward(direction::west, a, b).right
+    );
+
+    EXPECT_EQ(
+        b.bottom,
+        separate_rects_toward(direction::south, a, b).top
+    );
+
+    EXPECT_EQ(
+        b.right,
+        separate_rects_toward(direction::east, a, b).left
+    );
+}
+
+TEST(Rect, SeparateIntersect) {
     static auto const WB = 5;
     static auto const HB = 5;
 

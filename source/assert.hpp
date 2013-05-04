@@ -27,4 +27,10 @@
         } \
     } while (false)
     
-#define BK_CHECK_PTR(p) [&] { BK_ASSERT((p) != nullptr); return (p); }()
+#define BK_ASSERT_VALUE(x, cond) \
+    [&] {                        \
+        BK_ASSERT(cond);         \
+        return (x);              \
+    }()
+
+#define BK_CHECK_PTR(p) BK_ASSERT_VALUE(p, (p) != nullptr)

@@ -2,6 +2,9 @@
 
 #include "direction.hpp"
 
+//==============================================================================
+//! Distance (difference) between two values; always positive.
+//==============================================================================
 template <typename T, typename R = typename std::make_unsigned<T>::type>
 inline R distance(T const a, T const b) {
     return static_cast<R>(a >= b ? a - b : b - a);
@@ -43,8 +46,11 @@ template <typename T, typename R = typename std::make_unsigned<T>::type>
 inline R distance(point2d<T> const a, point2d<T> const b) {
     return static_cast<R>(std::sqrt(distance(a, b)));
 }
+//==============================================================================
 
-////////////////////////////////////////////////////////////////////////////////
+//==============================================================================
+//! A closed interval.
+//==============================================================================
 template <typename T>
 struct range {
     typedef typename std::make_unsigned<T>::type difference_t;
@@ -64,6 +70,10 @@ struct range {
 
     difference_t size() const {
         return last - first;
+    }
+
+    bool contains(T n) const {
+        return n >= first && n <= last;
     }
 
     template <typename U>
@@ -98,8 +108,11 @@ template <typename T, typename U>
 inline bool operator!=(range<T> const& a, range<U> const& b) {
     return !(a == b);
 }
-////////////////////////////////////////////////////////////////////////////////
+//==============================================================================
 
+//==============================================================================
+//! Rectangle.
+//==============================================================================
 template <typename T>
 struct rect {
     typedef typename std::make_signed<T>::type   difference_t;
@@ -210,53 +223,66 @@ inline bool operator!=(rect<T> const& a, rect<U> const& b) {
     return !(a == b);
 }
 
+//==============================================================================
+//! Compile time version of #separate_rects_toward.
+//! @tparam D #direction.
+//==============================================================================
 template <direction D> struct separate_rects;
 
-template <> struct separate_rects<direction::north> {
-    template <typename T>
-    static rect<T> get(rect<T> const a, rect<T> const b, T const padding = 0) {
-        return translate(a, 0, 0 - (padding + a.bottom - b.top));
+#define BK_SPECIALIZE_SEPARATE_RECTS(dir, dx, dy)                              \
+    template <> struct separate_rects<direction::dir> {                        \
+        template <typename T>                                                  \
+        static rect<T> get(                                                    \
+            rect<T> const source,                                              \
+            rect<T> const reference,                                           \
+            T       const padding = 0                                          \
+        ) {                                                                    \
+            return translate(                                                  \
+                source,                                                        \
+                get_x_axis_vector<direction::dir>::value * (dx),               \
+                get_y_axis_vector<direction::dir>::value * (dy)                \
+            );                                                                 \
+        }                                                                      \
     }
-};
 
-template <> struct separate_rects<direction::south> {
-    template <typename T>
-    static rect<T> get(rect<T> const a, rect<T> const b, T const padding = 0) {
-        return translate(a, 0, 0 + (padding + b.bottom - a.top));
-    }
-};
+BK_SPECIALIZE_SEPARATE_RECTS(north, 0, padding + source.bottom - reference.top);
+BK_SPECIALIZE_SEPARATE_RECTS(south, 0, padding + reference.bottom - source.top);
+BK_SPECIALIZE_SEPARATE_RECTS(west,  padding + source.right - reference.left, 0);
+BK_SPECIALIZE_SEPARATE_RECTS(east,  padding + reference.right - source.left, 0);
 
-template <> struct separate_rects<direction::west> {
-    template <typename T>
-    static rect<T> get(rect<T> const a, rect<T> const b, T const padding = 0) {
-        return translate(a, 0 - (padding + a.right - b.left), 0);
-    }
-};
+#undef BK_SPECIALIZE_SEPARATE_RECTS
 
-template <> struct separate_rects<direction::east> {
-    template <typename T>
-    static rect<T> get(rect<T> const a, rect<T> const b, T const padding = 0) {
-        return translate(a, 0 + (padding + b.right - a.left), 0);
-    }
-};
-
+//==============================================================================
+//! @param dir The #direction in which to translate @c source.
+//! @param source The #rect to translate.
+//! @param reference The #rect to translate relative to.
+//! @param padding The amount of extra space to leave between @c source and
+//!     @c reference.
+//! @returns A @c source translated in #direction @c dir such that @source and
+//!     @c reference do not intersect.
+//!
+//! @pre @c dir is a cardinal direction (NSEW).
+//==============================================================================
 template <typename T>
 rect<T> separate_rects_toward(
     direction const dir,
-    rect<T>   const a,
-    rect<T>   const b,
+    rect<T>   const source,
+    rect<T>   const reference,
     T         const padding = 0
 ) {
     switch (dir) {
     case direction::north :
-        return separate_rects<direction::north>::get(a, b, padding);
+        return separate_rects<direction::north>::get(source, reference, padding);
     case direction::south :
-        return separate_rects<direction::south>::get(a, b, padding);
+        return separate_rects<direction::south>::get(source, reference, padding);
     case direction::west :
-        return separate_rects<direction::west>::get(a, b, padding);
+        return separate_rects<direction::west>::get(source, reference, padding);
     case direction::east :
-        return separate_rects<direction::east>::get(a, b, padding);
-    default :
-        BK_ASSERT(false);
+        return separate_rects<direction::east>::get(source, reference, padding);
     }
+
+    BK_ASSERT(false);
+
+    return source;
 }
+//==============================================================================
