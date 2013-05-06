@@ -4,6 +4,7 @@
 #include "tile_category.hpp"
 #include "grid2d.hpp"
 #include "geometry.hpp"
+#include "room.hpp"
 
 class generator {
 public:
@@ -22,7 +23,7 @@ class simple_room_generator : public generator {
 public:
     simple_room_generator(random_t random);
 
-    grid_t generate();
+    room generate();
 };
 
 //==============================================================================
@@ -32,9 +33,13 @@ class compound_room_generator : public generator {
 public:
     compound_room_generator(random_t random);
 
-    grid_t generate();
+    room generate();
 private:
-
+    typedef point2d<signed> point_t;
+    
+    grid_t make_compound_room_base_();
+    
+    std::vector<point_t> points_; //list of occupied points
 };
 
 template <direction D>

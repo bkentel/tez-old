@@ -356,24 +356,21 @@ TEST(MapCreation, Test) {
 
     map_layout layout;
 
+    auto gen_simple   = simple_room_generator(random);
+    auto gen_compound = compound_room_generator(random);
+
     for (int i = 0; i < 20; ++i) {
         if (i % 4 == 0) {
-            layout.add_room(
-                compound_room_generator(random),
-                random
-            );
+            layout.add_room(gen_compound.generate(), random);
         } else {
-            layout.add_room(
-                simple_room_generator(random),
-                random
-            );
+            layout.add_room(gen_simple.generate(), random);
         }
     }
 
     layout.normalize();
     auto test_map = layout.make_map();
 
-    //std::cout << test_map;
+    std::cout << test_map;
     }
 }
 

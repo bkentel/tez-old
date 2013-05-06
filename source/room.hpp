@@ -23,14 +23,13 @@ public:
     typedef grid_t::iterator       iterator;
     typedef grid_t::const_iterator const_iterator;
     //--------------------------------------------------------------------------
-    template <typename T>
-    room(T&& generator)
-        : data_(generator.generate())
+    room(grid_t grid)
+        : data_(std::move(grid))
         , rect_(0, 0, data_.width(), data_.height())
     {
         BK_ASSERT(rect_.is_rect());
     }
-
+    
     room(room&& other)
         : rect_(other.rect_)
         , data_(std::move(other.data_))

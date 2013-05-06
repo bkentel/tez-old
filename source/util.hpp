@@ -74,11 +74,24 @@ struct min_max {
 //==============================================================================
 template <typename T>
 class random_wrapper {
-    template <typename T>
-    friend random_wrapper<typename std::result_of<T()>::type> make_random_wrapper(T&);
 public:
     typedef T result_type;
      
+
+    template <typename U>
+    random_wrapper(U&& gen,
+        typename std::enable_if<
+            std::is_convertible<typename std::result_of<U()>::type, T>::value &&
+            !std::is_same<
+                typename std::remove_reference<U>::type,
+                random_wrapper
+            >::value
+        >::type* = nullptr
+    )
+        : gen_([&] { return gen(); })
+    {
+    }
+
     T operator()() {
         return gen_();
     }
@@ -86,12 +99,6 @@ public:
     static T min() { return std::numeric_limits<T>::min(); }
     static T max() { return std::numeric_limits<T>::max(); }
 private:
-    template <typename U>
-    random_wrapper(U&& gen, bool) //the extra bool is to avoid implicit conversion
-        : gen_([&] { return gen(); })
-    {
-    }
-
     std::function<T ()> gen_;
 };
 
@@ -99,7 +106,5 @@ template <typename T>
 inline auto make_random_wrapper(T& random)
     -> random_wrapper<typename std::result_of<T()>::type>
 {
-    return random_wrapper<decltype(random())>(
-        random, true
-    );
+    return random_wrapper<typename T::result_type>(random);
 }

@@ -16,7 +16,7 @@ TEST(Map, AddRoom) {
     auto test_map = map(10, 20);
 
     std::default_random_engine random(1984);
-    room test_room = simple_room_generator(make_random_wrapper(random));
+    room test_room = simple_room_generator(make_random_wrapper(random)).generate();
 
     test_map.add_room(test_room, 0, 0);
 

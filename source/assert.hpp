@@ -1,6 +1,7 @@
 #pragma once
 
 #include "config.hpp"
+#include "scope_exit.hpp"
 
 #if defined(BK_TEST_BUILD)
 #   include <boost/exception/all.hpp>
@@ -34,3 +35,9 @@
     }()
 
 #define BK_CHECK_PTR(p) BK_ASSERT_VALUE(p, (p) != nullptr)
+
+#define BK_TEST_FAILURES \
+    BK_TEST_BREAK_ON_ASSERT = false; \
+    BK_ON_SCOPE_EXIT({ \
+        BK_TEST_BREAK_ON_ASSERT = true; \
+    });
