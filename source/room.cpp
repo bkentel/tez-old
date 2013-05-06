@@ -15,39 +15,42 @@ room::point_t room::find_connectable_point(
         return point_t(x + left(), y + top());
     };
 
-    switch (search_dir) {
-    case direction::north : {
-        unsigned const x = std::uniform_int_distribution<>(0, w-1)(random);
+    for(;;) {
+    unsigned x = (search_dir == direction::west) ? w-1 :
+                 (search_dir == direction::east) ? 0 :
+                 std::uniform_int_distribution<>(0, w-1)(random);
 
-        for (unsigned y = h; y != 0; --y) {
-            if (at(x, y-1) != tile_category::empty) return translated_point(x, y-1);
-        }
-    } break;
-    case direction::south : {
-        unsigned const x = std::uniform_int_distribution<>(0, w-1)(random);
+    unsigned y = (search_dir == direction::north) ? h-1 :
+                 (search_dir == direction::south) ? 0 :
+                 std::uniform_int_distribution<>(0, h-1)(random);
 
-        for (unsigned y = 0; y != h; ++y) {
-            if (at(x, y) != tile_category::empty) return translated_point(x, y);
-        }
-    } break;
-    case direction::east : {
-        unsigned const y = std::uniform_int_distribution<>(0, h-1)(random);
+    unsigned& var = (search_dir == direction::north || search_dir == direction::south) ?
+        y : x;
 
-        for (unsigned x = 0; x != w; ++x) {
-            if (at(x, y) != tile_category::empty) return translated_point(x, y);
-        }
-    } break;
-    case direction::west : {
-        unsigned const y = std::uniform_int_distribution<>(0, h-1)(random);
+    signed const delta = (search_dir == direction::north || search_dir == direction::west) ?
+        -1 : 1;
 
-        for (unsigned x = w; x != 0; --x) {
-            if (at(x-1, y) != tile_category::empty) return translated_point(x-1, y);
+    auto const is_in_bounds = [&](unsigned x, unsigned y) {
+        return x >= 0 && y >= 0 && x < width() && y < height();
+    };
+
+    for (; is_in_bounds(x, y); var += delta) {
+        if (at(x, y) != tile_category::ceiling) continue;
+
+        var += delta;
+
+        if (at(x, y) == tile_category::floor || (
+                at(x, y) == tile_category::wall && search_dir == direction::south
+            )
+        ) {
+            var -= delta;
+            return translated_point(x, y);
         }
-    } break;
-    default :
-        BK_ASSERT(false);
+        
+        std::cout << "fail with x, y = " << x << ", " << y << std::endl;
+        break;
+    }
     }
 
-    BK_ASSERT(false);
     return translated_point(0, 0);
 }

@@ -200,6 +200,13 @@ public:
     const_reference at_or(unsigned x, unsigned y, const_reference value) const {
         return is_valid_position(x, y) ? at(x, y) : value;
     }
+
+    typedef grid_block<T, true>  const_block;
+    typedef grid_block<T, false> block;
+
+    const_block block_at(unsigned x, unsigned y) const {
+        return const_block(this, x, y);
+    }
     //--------------------------------------------------------------------------
     unsigned width()  const { return width_; }
     unsigned height() const { return height_; }

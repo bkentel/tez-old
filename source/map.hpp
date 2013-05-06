@@ -36,6 +36,10 @@ public:
     tile_data& at(unsigned x, unsigned y) {
         return data_.at(x, y);
     }
+
+    grid2d<tile_data>::const_block block_at(unsigned x, unsigned y) const {
+        return data_.block_at(x, y);
+    }
     //--------------------------------------------------------------------------
     void add_room(room const& r, signed dx = 0, signed dy = 0);
     //--------------------------------------------------------------------------

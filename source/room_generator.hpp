@@ -42,53 +42,60 @@ private:
     std::vector<point_t> points_; //list of occupied points
 };
 
-template <direction D>
-struct path_generator_dist {
-    static unsigned const values[4];
+class path_generator {
+public:
+    explicit path_generator(random_wrapper<unsigned> random);
 
-    unsigned operator()(unsigned const i) const {
-        BK_ASSERT(i < 4);
-        return values[i];
-    }
-};
+    bool generate(room const& origin, map const& m);
 
-struct path_generator {
-    typedef std::discrete_distribution<unsigned> dist_t;
+    void write_path(map& out);
+private:
+    typedef std::discrete_distribution<unsigned> distribution_t;
+    
+    distribution_t path_dist_n_;
+    distribution_t path_dist_s_;
+    distribution_t path_dist_e_;
+    distribution_t path_dist_w_;
 
-    explicit path_generator(direction const dir) {
-        #define BK_MAKE_DIST(dir) \
-        case direction::dir : { \
-            auto gen = path_generator_dist<direction::dir>(); \
-            dist_ = dist_t(4, 0, 4, gen); \
-        } break
+    std::vector<point2d<unsigned>> path_;
+    random_wrapper<unsigned> random_;
 
-        switch (dir) {
-        BK_MAKE_DIST(north);
-        BK_MAKE_DIST(south);
-        BK_MAKE_DIST(east);
-        BK_MAKE_DIST(west);
-        }
+    //typedef std::discrete_distribution<unsigned> dist_t;
 
-        #undef BK_MAKE_DIST
-    };
+    //explicit path_generator(direction const dir) {
+    //    #define BK_MAKE_DIST(dir) \
+    //    case direction::dir : { \
+    //        auto gen = path_generator_dist<direction::dir>(); \
+    //        dist_ = dist_t(4, 0, 4, gen); \
+    //    } break
 
-    static direction to_direction(unsigned const i) {
-        switch (i) {
-        case 0 : return direction::north;
-        case 1 : return direction::south;
-        case 2 : return direction::east;
-        case 3 : return direction::west;
-        }
+    //    switch (dir) {
+    //    BK_MAKE_DIST(north);
+    //    BK_MAKE_DIST(south);
+    //    BK_MAKE_DIST(east);
+    //    BK_MAKE_DIST(west);
+    //    }
 
-        BK_ASSERT(false);
+    //    #undef BK_MAKE_DIST
+    //};
 
-        return direction::none;
-    }
+    //static direction to_direction(unsigned const i) {
+    //    switch (i) {
+    //    case 0 : return direction::north;
+    //    case 1 : return direction::south;
+    //    case 2 : return direction::east;
+    //    case 3 : return direction::west;
+    //    }
 
-    template <typename T>
-    direction operator()(T& random) {
-        return to_direction(dist_(random));
-    }
+    //    BK_ASSERT(false);
 
-    dist_t dist_;
+    //    return direction::none;
+    //}
+
+    //template <typename T>
+    //direction operator()(T& random) {
+    //    return to_direction(dist_(random));
+    //}
+
+    //dist_t dist_;
 };

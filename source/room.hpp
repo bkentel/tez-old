@@ -90,6 +90,10 @@ public:
         return data_.at(x, y);
     }
     
+    grid_block<tile_category, true> block_at(unsigned x, unsigned y) const {
+        return data_.block_at(x, y);
+    }
+
     point_t find_connectable_point(random_wrapper<unsigned> random, direction dir) const;
 private:
     room(room const&)            BK_DELETE;

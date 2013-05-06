@@ -13,6 +13,8 @@ enum class tile_category : uint8_t {
     water_shallow = '=',
     water_deep    = '~',
     door          = 'D',
+    door_start          = 'D',
+    door_end          = 'd',
     corridor      = '+',
 };
 
