@@ -59,16 +59,22 @@ generator::grid_t compound_room_generator::make_compound_room_base_() {
     auto const cell_size  = distribution_t(CELL_SIZE_MIN, CELL_SIZE_MAX)(random_);
     auto const cell_count = distribution_t(COUNT_MIN, COUNT_MAX)(random_);   
 
-    //true if the position given by p has already been used.
+    min_max<signed> range_x;
+    min_max<signed> range_y;
+
+    distribution_t dist(0, 3);
+
+    //--------------------------------------------------------------------------
+    // true if the position given by p has already been used.
+    //--------------------------------------------------------------------------
     auto const is_occupied = [&](point_t const p) {
         return std::find(
             std::begin(points_), std::end(points_), p
         ) != std::end(points_);
     };
-
-    distribution_t dist(0, 3);
-
-    //get a point offset in a cardinal direction from p
+    //--------------------------------------------------------------------------
+    // get a point offset in a cardinal direction from p
+    //--------------------------------------------------------------------------
     auto const get_point = [&](point_t const p) -> point_t {
         auto const base   = dist(random_);
         auto       result = p;
@@ -84,10 +90,9 @@ generator::grid_t compound_room_generator::make_compound_room_base_() {
 
         return result;
     };
-
-    min_max<signed> range_x;
-    min_max<signed> range_y;
-
+    //--------------------------------------------------------------------------
+    // add a point and update the x and y range
+    //--------------------------------------------------------------------------
     auto const add_point = [&](point_t const p) {
         range_x(p.x);
         range_y(p.y);
@@ -111,10 +116,10 @@ generator::grid_t compound_room_generator::make_compound_room_base_() {
         add_point(p = q);
     }
 
-    auto const w = range_x.distance() + 1;
-    auto const h = range_y.distance() + 1;
+    auto const w = cell_size*(range_x.distance() + 1);
+    auto const h = cell_size*(range_y.distance() + 1);
 
-    grid_t result(w*cell_size, h*cell_size, tile_category::empty);
+    grid_t result(w, h, tile_category::empty);
 
     for (auto const p : points_) {
         auto const xb = (p.x - range_x.min) * cell_size;
@@ -122,10 +127,7 @@ generator::grid_t compound_room_generator::make_compound_room_base_() {
 
         for (auto yi = 0U; yi < cell_size; ++yi) {
             for (auto xi = 0U; xi < cell_size; ++xi) {
-                auto const x = xi + xb;
-                auto const y = yi + yb;
-
-                result.at(x, y) = tile_category::floor;
+                result.at(xi + xb, yi + yb) = tile_category::floor;
             }
         }
     }
@@ -158,6 +160,8 @@ room compound_room_generator::generate() {
     };
 
     for (auto& b : result.block_iterator()) {
+        BK_ASSERT(b.here() != nullptr);
+
         if (b.here() == nullptr || *b.here() == empty) {
             continue;
         }
@@ -182,10 +186,10 @@ unsigned get_probabilities(unsigned dir, unsigned index) {
     };
 
     static probability_list const path_probabilities[] = {
-        {80, 10, 20, 20}, //north
-        {10, 80, 20, 20}, //south
-        {20, 20, 80, 10}, //east
-        {20, 20, 10, 80}, //west
+        {800, 10, 20, 20}, //north
+        {10, 800, 20, 20}, //south
+        {20, 20, 800, 10}, //east
+        {20, 20, 10, 800}, //west
     };
 
     BK_ASSERT(dir < 4);
@@ -215,7 +219,7 @@ path_generator::path_generator(random_wrapper<unsigned> random)
 {
 }
 
-bool path_generator::generate(room const& origin, map const& m) {
+bool path_generator::generate(room const& origin, map const& m, direction const dir) {
     auto const map_w = m.width();
     auto const map_h = m.height();
 
@@ -223,32 +227,20 @@ bool path_generator::generate(room const& origin, map const& m) {
     // Get a random unit vector
     //--------------------------------------------------------------------------
     auto const get_random_vector = [&](distribution_t const& dist) -> point2d<signed> {
-        signed const dir_x[] = { 0, 0, -1, 1};
-        signed const dir_y[] = {-1, 1,  0, 0};
+        signed const dir_x[] = { 0, 0, 1, -1};
+        signed const dir_y[] = {-1, 1, 0,  0};
 
         auto const i = dist(random_);
         
         return point2d<signed>(dir_x[i], dir_y[i]);
     };
     //--------------------------------------------------------------------------
-    // Get a random NSEW direction
-    //--------------------------------------------------------------------------
-    auto const get_random_direction = [&]() -> direction {
-        direction const dir[] = {
-            direction::north, direction::south,
-            direction::east,  direction::west,
-        };
-
-        auto const i = std::uniform_int_distribution<unsigned>(0, 3)(random_);
-        
-        return dir[i];
-    };
-    //--------------------------------------------------------------------------
     auto const is_in_bounds = [&](unsigned const x, unsigned const y) {
         return (x >= 0) && (y >= 0) && (x < map_w) && (y < map_h);
     };
     //--------------------------------------------------------------------------
-    auto const is_pathable = [](tile_category const c) {
+    auto const is_pathable = [&](unsigned const x, unsigned const y) {
+        auto const c = m.at(x, y).type;
         return (c == tile_category::corridor) || (c == tile_category::empty);
     };
     //--------------------------------------------------------------------------
@@ -261,15 +253,31 @@ bool path_generator::generate(room const& origin, map const& m) {
         auto const w = b.west()  ? b.west()->type  : tile_category::empty;
 
         static auto const C = tile_category::ceiling;
-        static auto const F = tile_category::floor;
+        auto const check = [&](tile_category const c) {
+            return c == tile_category::ceiling || c == tile_category::wall;
+        };
 
         return (n == C && s == C) ^ (e == C && w == C) &&
-            (e == F || w == F || n == F || s == F);
+            (check(e) || check(w) || check(n) || check(s));
+
+        //return true;
     };
     //--------------------------------------------------------------------------
-    auto const dir = get_random_direction();
+    auto const is_on_path = [&](unsigned const x, unsigned const y) {
+        return std::find_if(path_.cbegin(), path_.cend(), [&](point_t const p) {
+            return p.x == x && p.y == y;
+        }) != path_.cend();
+    };
+    //--------------------------------------------------------------------------
+    auto const bounds = origin.bounds();
+    auto const is_in_origin = [&](unsigned const x, unsigned const y) {
+        return bounds.contains(static_cast<signed>(x), static_cast<signed>(y));
+    };
+    //--------------------------------------------------------------------------
     auto p = origin.find_connectable_point(random_, dir);
     BK_ASSERT(is_in_bounds(p.x, p.y));
+    auto const check_val = m.at(p.x, p.y).type;
+    BK_ASSERT(check_val != tile_category::empty && check_val != tile_category::floor);
 
     distribution_t const& dist =
         (dir == direction::north ) ? path_prob_n :
@@ -288,19 +296,18 @@ bool path_generator::generate(room const& origin, map const& m) {
         auto const x = p.x + v.x;
         auto const y = p.y + v.y;
 
-        if (!is_in_bounds(x, y) || origin.bounds().contains(
-            static_cast<signed>(x), static_cast<signed>(y)
-        )) {
-            // try again
+        if (!is_in_bounds(x, y)) {
             fail_count++;
             continue;
-        } else if (!is_pathable(m.at(x, y).type)) {           
-            if (is_connectable(x, y)) {
-                found_path = true;
-            } else {
+        }
+
+        if (!is_pathable(x, y)) {
+            if (is_in_origin(x, y) || !is_connectable(x, y) || is_on_path(x, y)) {
                 fail_count++;
                 continue;
             }
+             
+             found_path = true;
         }
 
         path_.emplace_back(x, y);

@@ -216,12 +216,40 @@ map map_layout::make_map() const {
 
     std::default_random_engine random(1984);
 
+    //--------------------------------------------------------------------------
+    // Get a random NSEW direction
+    //--------------------------------------------------------------------------
+    auto const get_random_direction = [&]() -> direction {
+        direction const dir[] = {
+            direction::north, direction::south,
+            direction::east,  direction::west,
+        };
+
+        auto const i = std::uniform_int_distribution<unsigned>(0, 3)(random);
+        
+        return dir[i];
+    };
+
     auto pg = path_generator(make_random_wrapper(random));
 
     for (auto const& r : rooms_) {
         bool path = false;
-        for (unsigned i = 0; (i < 4000) && !(path = pg.generate(r, result)); ++i);
-        if (path) pg.write_path(result);
+        while (!path) {
+            auto const dir = get_random_direction();
+            
+            switch (dir) {
+            case direction::north : std::cout << "try north...\n"; break;
+            case direction::south : std::cout << "try south...\n"; break;
+            case direction::east  : std::cout << "try east...\n";  break;
+            case direction::west  : std::cout << "try west...\n";  break;
+            }
+
+            for (unsigned i = 0; !path && i < 10; ++i) {
+                path = pg.generate(r, result, dir);
+            }
+        }
+        
+        pg.write_path(result);
     }
     
     return result;
