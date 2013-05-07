@@ -321,7 +321,7 @@
     <ClInclude Include="source\config.hpp" />
     <ClInclude Include="source\platform\d2d_renderer.hpp" />
     <ClInclude Include="source\retained\entity.hpp" />
-    <ClInclude Include="source\geometry.hpp" />
+    <ClInclude Include="source\bklib\geometry.hpp" />
     <ClInclude Include="source\grid2d.hpp" />
     <ClInclude Include="source\retained\keyboard.hpp" />
     <ClInclude Include="source\retained\level.hpp" />
@@ -343,6 +343,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\assert.cpp" />
+    <ClCompile Include="source\bklib\tests\test_geometry.cpp" />
     <ClCompile Include="source\map.cpp" />
     <ClCompile Include="source\map_layout.cpp" />
     <ClCompile Include="source\platform\d2d_renderer.cpp" />

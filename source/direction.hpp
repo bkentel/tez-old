@@ -3,7 +3,7 @@
 #include <type_traits>
 
 //==============================================================================
-//! Cardinal directions that can be combined in a bit mask.
+//! Cardinal directions
 //==============================================================================
 enum class direction {
     here       = 0,
