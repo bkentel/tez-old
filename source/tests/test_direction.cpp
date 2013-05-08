@@ -1,90 +1,48 @@
 #include "pch.hpp"
 #include <gtest/gtest.h>
 
-#include "direction.hpp"
+#include "tez/direction.hpp"
 
-TEST(Direction, GetXAxis) {
-    auto x = get_x_axis_vector<direction::here>::value;
+TEST(Direction, Opposite) {
+    using namespace tez;
+    typedef direction dir;
 
-    EXPECT_EQ( 0, get_x_axis_vector<direction::here>::value);
-    EXPECT_EQ( 0, get_x_axis_vector<direction::none>::value);
-    EXPECT_EQ( 0, get_x_axis_vector<direction::north>::value);
-    EXPECT_EQ( 0, get_x_axis_vector<direction::south>::value);
-    EXPECT_EQ( 1, get_x_axis_vector<direction::east>::value);
-    EXPECT_EQ(-1, get_x_axis_vector<direction::west>::value);
-    EXPECT_EQ( 1, get_x_axis_vector<direction::north_east>::value);
-    EXPECT_EQ(-1, get_x_axis_vector<direction::north_west>::value);
-    EXPECT_EQ( 1, get_x_axis_vector<direction::south_east>::value);
-    EXPECT_EQ(-1, get_x_axis_vector<direction::south_west>::value);
-    EXPECT_EQ( 0, get_x_axis_vector<direction::up>::value);
-    EXPECT_EQ( 0, get_x_axis_vector<direction::down>::value);
-
-    EXPECT_EQ( 0, get_x_vector(direction::here));
-    EXPECT_EQ( 0, get_x_vector(direction::none));
-    EXPECT_EQ( 0, get_x_vector(direction::north));
-    EXPECT_EQ( 0, get_x_vector(direction::south));
-    EXPECT_EQ( 1, get_x_vector(direction::east));
-    EXPECT_EQ(-1, get_x_vector(direction::west));
-    EXPECT_EQ( 1, get_x_vector(direction::north_east));
-    EXPECT_EQ(-1, get_x_vector(direction::north_west));
-    EXPECT_EQ( 1, get_x_vector(direction::south_east));
-    EXPECT_EQ(-1, get_x_vector(direction::south_west));
-    EXPECT_EQ( 0, get_x_vector(direction::up));
-    EXPECT_EQ( 0, get_x_vector(direction::down));
+    EXPECT_EQ(dir::north,      opposite_direction(dir::south));
+    EXPECT_EQ(dir::south,      opposite_direction(dir::north));
+    EXPECT_EQ(dir::east,       opposite_direction(dir::west));
+    EXPECT_EQ(dir::west,       opposite_direction(dir::east));
+    EXPECT_EQ(dir::north_east, opposite_direction(dir::south_west));
+    EXPECT_EQ(dir::south_west, opposite_direction(dir::north_east));
+    EXPECT_EQ(dir::north_west, opposite_direction(dir::south_east));
+    EXPECT_EQ(dir::south_east, opposite_direction(dir::north_west));
+    EXPECT_EQ(dir::up,         opposite_direction(dir::down));
+    EXPECT_EQ(dir::down,       opposite_direction(dir::up));
+    EXPECT_EQ(dir::here,       opposite_direction(dir::none));
+    EXPECT_EQ(dir::none,       opposite_direction(dir::here));
 }
 
-TEST(Direction, GetYAxis) {
-    EXPECT_EQ( 0, get_y_axis_vector<direction::here>::value);
-    EXPECT_EQ( 0, get_y_axis_vector<direction::none>::value);
-    EXPECT_EQ(-1, get_y_axis_vector<direction::north>::value);
-    EXPECT_EQ( 1, get_y_axis_vector<direction::south>::value);
-    EXPECT_EQ( 0, get_y_axis_vector<direction::east>::value);
-    EXPECT_EQ( 0, get_y_axis_vector<direction::west>::value);
-    EXPECT_EQ(-1, get_y_axis_vector<direction::north_east>::value);
-    EXPECT_EQ(-1, get_y_axis_vector<direction::north_west>::value);
-    EXPECT_EQ( 1, get_y_axis_vector<direction::south_east>::value);
-    EXPECT_EQ( 1, get_y_axis_vector<direction::south_west>::value);
-    EXPECT_EQ( 0, get_y_axis_vector<direction::up>::value);
-    EXPECT_EQ( 0, get_y_axis_vector<direction::down>::value);
+TEST(Direction, Vector) {
+    using namespace tez;
+    typedef direction dir;
 
-    EXPECT_EQ( 0, get_y_vector(direction::here));
-    EXPECT_EQ( 0, get_y_vector(direction::none));
-    EXPECT_EQ(-1, get_y_vector(direction::north));
-    EXPECT_EQ( 1, get_y_vector(direction::south));
-    EXPECT_EQ( 0, get_y_vector(direction::east));
-    EXPECT_EQ( 0, get_y_vector(direction::west));
-    EXPECT_EQ(-1, get_y_vector(direction::north_east));
-    EXPECT_EQ(-1, get_y_vector(direction::north_west));
-    EXPECT_EQ( 1, get_y_vector(direction::south_east));
-    EXPECT_EQ( 1, get_y_vector(direction::south_west));
-    EXPECT_EQ( 0, get_y_vector(direction::up));
-    EXPECT_EQ( 0, get_y_vector(direction::down));
-}
+    auto const check = [](dir const a, dir const b) {
+        EXPECT_EQ(0, direction_vector(a).first + direction_vector(b).first);
+        EXPECT_EQ(0, direction_vector(a).second + direction_vector(b).second);
+    };
 
-TEST(Direction, GetZAxis) {
-    EXPECT_EQ( 0, get_z_axis_vector<direction::here>::value);
-    EXPECT_EQ( 0, get_z_axis_vector<direction::none>::value);
-    EXPECT_EQ( 0, get_z_axis_vector<direction::north>::value);
-    EXPECT_EQ( 0, get_z_axis_vector<direction::south>::value);
-    EXPECT_EQ( 0, get_z_axis_vector<direction::east>::value);
-    EXPECT_EQ( 0, get_z_axis_vector<direction::west>::value);
-    EXPECT_EQ( 0, get_z_axis_vector<direction::north_east>::value);
-    EXPECT_EQ( 0, get_z_axis_vector<direction::north_west>::value);
-    EXPECT_EQ( 0, get_z_axis_vector<direction::south_east>::value);
-    EXPECT_EQ( 0, get_z_axis_vector<direction::south_west>::value);
-    EXPECT_EQ(-1, get_z_axis_vector<direction::up>::value);
-    EXPECT_EQ( 1, get_z_axis_vector<direction::down>::value);
-
-    EXPECT_EQ( 0, get_z_vector(direction::here));
-    EXPECT_EQ( 0, get_z_vector(direction::none));
-    EXPECT_EQ( 0, get_z_vector(direction::north));
-    EXPECT_EQ( 0, get_z_vector(direction::south));
-    EXPECT_EQ( 0, get_z_vector(direction::east));
-    EXPECT_EQ( 0, get_z_vector(direction::west));
-    EXPECT_EQ( 0, get_z_vector(direction::north_east));
-    EXPECT_EQ( 0, get_z_vector(direction::north_west));
-    EXPECT_EQ( 0, get_z_vector(direction::south_east));
-    EXPECT_EQ( 0, get_z_vector(direction::south_west));
-    EXPECT_EQ(-1, get_z_vector(direction::up));
-    EXPECT_EQ( 1, get_z_vector(direction::down));
+    check(dir::north,      dir::south);
+    check(dir::south,      dir::north);
+    check(dir::east,       dir::west);
+    check(dir::west,       dir::east);
+    check(dir::north_east, dir::south_west);
+    check(dir::south_west, dir::north_east);
+    check(dir::north_west, dir::south_east);
+    check(dir::south_east, dir::north_west);
+    
+    BK_TEST_FAILURES {
+        EXPECT_THROW(check(dir::up,  dir::down),  assertion_failure);
+        EXPECT_THROW(check(dir::down, dir::up),   assertion_failure);
+        EXPECT_THROW(check(dir::here, dir::none), assertion_failure);
+        EXPECT_THROW(check(dir::none, dir::here), assertion_failure);
+    }
 }

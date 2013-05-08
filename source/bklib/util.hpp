@@ -4,6 +4,29 @@
 #include <functional>
 #include <type_traits>
 
+namespace bklib {
+
+//==============================================================================
+//! Add cv qualifiers conditionally.
+//==============================================================================
+template <
+    typename T,
+    bool IsIntegral = std::is_integral<T>::value
+>
+struct make_distance_type {
+    typedef typename std::make_unsigned<T>::type type;
+};
+
+template <typename T>
+struct make_distance_type<T, false> {
+    typedef typename std::enable_if<
+        std::is_floating_point<T>::value, T
+    >::type type;
+};
+
+//==============================================================================
+//! Add cv qualifiers conditionally.
+//==============================================================================
 template <typename T, bool Const = false, bool Volatile = false>
 struct make_cv_if {
     typedef T type;
@@ -23,16 +46,31 @@ template <typename T>
 struct make_cv_if<T, true, true> {
     typedef typename std::add_cv<T>::type type;
 };
-
+//==============================================================================
+//! Find the min of a variable number of arguments.
+//==============================================================================
 template <typename T>
-T min(T const head) {
+inline T min(T const head) {
     return head;
 }
 
 template <typename T, typename... Ts>
-T min(T const head, Ts... tail) {
+inline T min(T const head, Ts const... tail) {
     T const tail_min = min(tail...);
     return head <= tail_min ? head : tail_min;
+}
+//==============================================================================
+//! Find the max of a variable number of arguments.
+//==============================================================================
+template <typename T>
+inline T max(T const head) {
+    return head;
+}
+
+template <typename T, typename... Ts>
+inline T max(T const head, Ts const... tail) {
+    T const tail_max = max(tail...);
+    return head >= tail_max ? head : tail_max;
 }
 
 //==============================================================================
@@ -41,6 +79,10 @@ T min(T const head, Ts... tail) {
 //==============================================================================
 template <typename T>
 struct min_max {
+    static_assert(std::is_arithmetic<T>::value, "T must be arithmetic");
+
+    typedef typename make_distance_type<T>::type distance_t;
+
     min_max()
         : min(std::numeric_limits<T>::max())
         , max(std::numeric_limits<T>::lowest())
@@ -58,14 +100,11 @@ struct min_max {
         max = max < value ? value : max;
     }
 
-    typedef typename std::make_unsigned<T>::type distance_t;
-
     distance_t distance() const {
         return static_cast<distance_t>(max - min);
     }
 
-    T min;
-    T max;
+    T min, max;
 };
 
 //==============================================================================
@@ -76,12 +115,15 @@ template <typename T>
 class random_wrapper {
 public:
     typedef T result_type;
-     
 
+    //!TODO cleanup this condition
     template <typename U>
     random_wrapper(U&& gen,
         typename std::enable_if<
-            std::is_convertible<typename std::result_of<U()>::type, T>::value &&
+            std::is_convertible<
+                typename std::result_of<U()>::type,
+                result_type
+            >::value &&
             !std::is_same<
                 typename std::remove_reference<U>::type,
                 random_wrapper
@@ -92,14 +134,14 @@ public:
     {
     }
 
-    T operator()() {
+    result_type operator()() {
         return gen_();
     }
 
-    static T min() { return std::numeric_limits<T>::min(); }
-    static T max() { return std::numeric_limits<T>::max(); }
+    static result_type min() { return std::numeric_limits<T>::min(); }
+    static result_type max() { return std::numeric_limits<T>::max(); }
 private:
-    std::function<T ()> gen_;
+    std::function<result_type ()> gen_;
 };
 
 template <typename T>
@@ -108,3 +150,5 @@ inline auto make_random_wrapper(T& random)
 {
     return random_wrapper<typename T::result_type>(random);
 }
+
+} //namespace bklib

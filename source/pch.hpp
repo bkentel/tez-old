@@ -20,7 +20,7 @@
 
 #include <boost/exception/all.hpp>
 
-#include "assert.hpp"
+#include "bklib/assert.hpp"
 
 template <typename T>
 inline T clone(T const value) {

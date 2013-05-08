@@ -25,6 +25,29 @@
 #   define BK_PLATFORM_WINDOWS
 #endif
 
+//------------------------------------------------------------------------------
+// Compiler specific defines for "deleted" functions.
+//------------------------------------------------------------------------------
+#if defined(BK_COMPILER_MSVC)
+#   define BK_DELETE
+#else
+#   define BK_DELETE = delete
+#endif
+
+//------------------------------------------------------------------------------
+// Compiler specific defines for nothrow.
+//------------------------------------------------------------------------------
+#if defined(BK_COMPILER_MSVC)
+#   define BK_NOTHROW throw()
+#   define BK_NOTHROW_IF(x)
+#else
+#   define BK_NOTHROW nothrow
+#   define BK_NOTHROW_IF(x) nothrow((x))
+#endif
+
+//------------------------------------------------------------------------------
+// Compiler specific defines unreachable code.
+//------------------------------------------------------------------------------
 #if defined(BK_COMPILER_MSVC)
 #   if defined(NDEBUG)
 #       define BK_UNREACHABLE __assume(0);
@@ -35,8 +58,6 @@
 #   error "BK_UNREACHABLE unimplemented"
 #endif
 
-#define BK_DELETE
-#define BK_NOTHROW throw()
 
 #define BK_CONCAT_IMPL(a, b) a##b
 #define BK_CONCAT(a, b) BK_CONCAT_IMPL(a, b)

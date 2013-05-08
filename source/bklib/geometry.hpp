@@ -1,28 +1,15 @@
 #pragma once
 
 #include <type_traits>
+#include "util.hpp"
 
 namespace bklib {
-
-
-template <typename T, bool Integral = std::is_integral<T>::value>
-struct make_difference_type {
-    typedef typename std::make_unsigned<T>::type type;
-};
-
-template <typename T>
-struct make_difference_type<T, false> {
-    typedef typename std::enable_if<
-        std::is_floating_point<T>::value, T
-    >::type type;
-};
-
 //==============================================================================
 //! Distance (difference) between two values; always positive.
 //==============================================================================
 template <
     typename T,
-    typename R = typename make_difference_type<T>::type
+    typename R = typename make_distance_type<T>::type
 >
 inline R distance(T const a, T const b,
     typename std::enable_if<std::is_arithmetic<T>::value>::type* = nullptr
@@ -34,7 +21,7 @@ inline R distance(T const a, T const b,
 //==============================================================================
 template <
     typename T,
-    typename R = typename make_difference_type<T>::type
+    typename R = typename make_distance_type<T>::type
 >
 inline R magnitude(T const n) {
     return static_cast<R>(std::abs(n));
@@ -83,7 +70,7 @@ struct point2d {
 template <
     typename T,
     typename U,
-    typename R = typename make_difference_type<
+    typename R = typename make_distance_type<
         typename std::common_type<T, U>::type
     >::type
 >
@@ -99,7 +86,7 @@ template <typename T, typename U>
 inline double distance(point2d<T> const a, point2d<U> const b) {
     return std::sqrt(distance2(a, b));
 }
-////==============================================================================
+//==============================================================================
 //! A closed interval.
 //==============================================================================
 template <typename T>
@@ -120,7 +107,7 @@ struct range {
     range<R> intersection_with(range<U> const& b) const {
         auto const& a = *this;
 
-        return R(
+        return range<R>(
             a.first < b.first ? b.first : a.first,
             a.last  > b.last  ? b.last  : a.last
         );
@@ -128,7 +115,7 @@ struct range {
 
     template <typename U>
     bool intersects(range<U> const& b) const {
-        return intersection_with(b);
+        return static_cast<bool>(intersection_with(b));
     }
 
     template <typename U>
@@ -136,7 +123,7 @@ struct range {
         return n >= first && n <= last;
     }
 
-    typename make_difference_type<T>::type magnitude() const {
+    typename make_distance_type<T>::type magnitude() const {
         return distance(last, first);
     }
 
@@ -181,7 +168,7 @@ struct range {
 //==============================================================================
 template <typename T>
 struct rect {
-    typedef typename make_difference_type<T>::type size_type;
+    typedef typename make_distance_type<T>::type size_type;
 
     template <typename U, typename V = size_type>
     rect(point2d<U> const p, V const w, V const h)
@@ -204,6 +191,22 @@ struct rect {
         return (left < right) && (top < bottom);
     }
 
+    template <typename U>
+    bool operator==(rect<U> const& rhs) const {
+        auto const& a = *this;
+        auto const& b = rhs;
+
+        return (a.left   == b.left)   &&
+               (a.top    == b.top)    &&
+               (a.right  == b.right)  &&
+               (a.bottom == b.bottom);
+    }
+
+    template <typename U>
+    inline bool operator!=(rect<U> const& rhs) const {
+        return !(*this == rhs);
+    }
+
     template <typename U, typename V>
     rect& translate_to(U const x, V const y) {
         auto const w = width();
@@ -213,6 +216,8 @@ struct rect {
         right  = x + w;
         top    = y;
         bottom = y + h;
+
+        return *this;
     }
 
     template <typename U, typename V>
@@ -273,7 +278,7 @@ struct rect {
             << "--left   = " << r.left   << "\n"
             << "--top    = " << r.top    << "\n"
             << "--right  = " << r.right  << "\n"
-            << "--bottom = " << r.bottom << "\n"
+            << "--bottom = " << r.bottom << "\n";
     }
 
     T left, top, right, bottom;
@@ -306,19 +311,7 @@ inline auto intersection_of(rect<T> const& a, rect<U> const& b)
     );
 }
 
-template <typename T, typename U>
-inline bool operator==(rect<T> const& a, rect<U> const& b) {
-    return
-        (a.left   == b.left)   &&
-        (a.top    == b.top)    &&
-        (a.right  == b.right)  &&
-        (a.bottom == b.bottom);
-}
 
-template <typename T, typename U>
-inline bool operator!=(rect<T> const& a, rect<U> const& b) {
-    return !(a == b);
-}
 
 ////==============================================================================
 ////! Compile time version of #separate_rects_toward.

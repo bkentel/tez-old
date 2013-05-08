@@ -1,7 +1,7 @@
 #pragma once
 
 #include "types.hpp"
-#include "geometry.hpp"
+#include "bklib/geometry.hpp"
 #include "grid2d.hpp"
 #include "util.hpp"
 #include "tile_category.hpp"
