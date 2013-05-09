@@ -181,8 +181,7 @@ struct rect {
         BK_ASSERT(h > static_cast<T>(0));
     }
     
-    template <typename U>
-    rect(U left, U top, U right, U bottom)
+    rect(T left, T top, T right, T bottom)
         : left(left), top(top), right(right), bottom(bottom)
     {
     }
@@ -207,8 +206,7 @@ struct rect {
         return !(*this == rhs);
     }
 
-    template <typename U, typename V>
-    rect& translate_to(U const x, V const y) {
+    rect& translate_to(T const x, T const y) {
         auto const w = width();
         auto const h = height();
 
@@ -220,8 +218,8 @@ struct rect {
         return *this;
     }
 
-    template <typename U, typename V>
-    rect& translate_by(U const dx, V const dy) {
+    template <typename U>
+    rect& translate_by(U const dx, U const dy) {
         left   += dx;
         right  += dx;
         top    += dy;
@@ -284,34 +282,15 @@ struct rect {
     T left, top, right, bottom;
 };
 
-template <typename T, typename U, typename V>
-inline rect<T> translate(rect<T> const& r, U dx, V dy) {
-    return rect<T>(
-        r.left   + dx,
-        r.top    + dy,
-        r.right  + dx,
-        r.bottom + dy
-    );
-}
-
 template <typename T, typename U>
-inline auto intersection_of(rect<T> const& a, rect<U> const& b)
-    -> rect<typename std::common_type<T, U>::type>
-{
-    range<T> const ax(a.left, a.right);
-    range<T> const ay(a.top,  a.bottom);
-    range<U> const bx(b.left, b.right);
-    range<U> const by(b.top,  b.bottom);
-
-    auto const ix = intersection_of(ax, bx);
-    auto const iy = intersection_of(ay, by);
-
-    return rect<typename std::common_type<T, U>::type>(
-        ix.first, iy.first, ix.last, iy.last
-    );
+rect<T> translate_by(rect<T> r, U dx, U dy) {
+    return r.translate_by(dx, dy);
 }
 
-
+template <typename T>
+rect<T> translate_to(rect<T> r, T x, T y) {
+    return r.translate_to(x, y);
+}
 
 ////==============================================================================
 ////! Compile time version of #separate_rects_toward.

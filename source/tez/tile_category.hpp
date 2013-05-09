@@ -3,6 +3,8 @@
 #include <ostream>
 #include <cstdint>
 
+namespace tez {
+
 //! Tile categories used in map generation.
 enum class tile_category : uint8_t {
     empty         = ' ',
@@ -10,14 +12,13 @@ enum class tile_category : uint8_t {
     ceiling       = '#',
     floor         = '.',
     pit           = '_',
-    water_shallow = '=',
-    water_deep    = '~',
+    water         = '=',
     door          = 'D',
-    door_start          = 'D',
-    door_end          = 'd',
     corridor      = '+',
 };
 
 inline std::ostream& operator<<(std::ostream& out, tile_category const t) {
     return out << static_cast<char>(t);
 }
+
+} //namespace tez

@@ -320,6 +320,7 @@
   <ItemGroup>
     <ClInclude Include="source\bklib\assert.hpp" />
     <ClInclude Include="source\bklib\config.hpp" />
+    <ClInclude Include="source\bklib\targa.hpp" />
     <ClInclude Include="source\platform\d2d_renderer.hpp" />
     <ClInclude Include="source\retained\entity.hpp" />
     <ClInclude Include="source\bklib\geometry.hpp" />
@@ -329,12 +330,19 @@
     <ClInclude Include="source\pch.hpp" />
     <ClInclude Include="source\bklib\scope_exit.hpp" />
     <ClInclude Include="source\tez\direction.hpp" />
+    <ClInclude Include="source\tez\grid2d.hpp" />
+    <ClInclude Include="source\tez\room.hpp" />
+    <ClInclude Include="source\tez\room_generator.hpp" />
+    <ClInclude Include="source\tez\room_type.hpp" />
+    <ClInclude Include="source\tez\tile.hpp" />
+    <ClInclude Include="source\tez\tile_category.hpp" />
     <ClInclude Include="source\types.hpp" />
     <ClInclude Include="source\bklib\util.hpp" />
     <ClInclude Include="source\platform\window.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\bklib\assert.cpp" />
+    <ClCompile Include="source\bklib\targa.cpp" />
     <ClCompile Include="source\bklib\tests\test_geometry.cpp" />
     <ClCompile Include="source\bklib\tests\test_util.cpp" />
     <ClCompile Include="source\platform\d2d_renderer.cpp" />
@@ -355,6 +363,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test_Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="source\tests\test_direction.cpp" />
+    <ClCompile Include="source\tests\test_grid2d.cpp" />
     <ClCompile Include="source\tests\test_main.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -362,6 +371,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
       <PreprocessToFile Condition="'$(Configuration)|$(Platform)'=='Test_Debug|x64'">false</PreprocessToFile>
     </ClCompile>
+    <ClCompile Include="source\tests\test_tile.cpp" />
+    <ClCompile Include="source\tez\room.cpp" />
+    <ClCompile Include="source\tez\room_generator.cpp" />
+    <ClCompile Include="source\tez\tile.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

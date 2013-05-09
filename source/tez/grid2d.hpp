@@ -1,8 +1,8 @@
 #pragma once
 
-#include "config.hpp"
-#include "assert.hpp"
-#include "util.hpp"
+#include "bklib/config.hpp"
+#include "bklib/assert.hpp"
+#include "bklib/util.hpp"
 
 #include <memory>
 #include <utility>
@@ -11,6 +11,8 @@
 #include <algorithm>
 
 #include <boost/iterator/iterator_facade.hpp>
+
+namespace tez {
 
 template <typename>       class  grid2d;
 template <typename>       struct grid_position;
@@ -28,23 +30,19 @@ template <typename T>
 class grid2d {
 public:
     //--------------------------------------------------------------------------
-    typedef std::vector<T> storage;
-    
-    typedef typename T      value_type;
-
+    typedef std::vector<T>                    storage;
+    typedef typename T                        value_type;
     typedef typename storage::reference       reference;
     typedef typename storage::const_reference const_reference;
-
     typedef typename storage::pointer         pointer;
     typedef typename storage::const_pointer   const_pointer;
-
-    typedef typename grid_iterator<T>        iterator;
-    typedef typename grid_iterator<T const>  const_iterator;
-
+    typedef typename grid_iterator<T>         iterator;
+    typedef typename grid_iterator<T const>   const_iterator;
+    
     typedef std::pair<unsigned, unsigned>     position;
     typedef size_t                            index;
-    //--------------------------------------------------------------------------
-
+    typedef grid_block<T, true>               const_block;
+    typedef grid_block<T, false>              block;
     //--------------------------------------------------------------------------
     grid2d()
         : width_(0)
@@ -70,7 +68,6 @@ public:
         BK_ASSERT(w > 0);
         BK_ASSERT(h > 0);
     }
-
     //--------------------------------------------------------------------------
     // Contruct and fill with @c value.
     // @remark Enabled for <tt>is_copy_assignable<T> = true</tt> only.
@@ -85,7 +82,6 @@ public:
         , data_(w*h, value)
     {    
     }
-
     //--------------------------------------------------------------------------
     // Contruct and fill with the values return from @c function.
     //--------------------------------------------------------------------------    
@@ -153,7 +149,6 @@ public:
 
         return result;
     }
-
     //--------------------------------------------------------------------------
     block_iterator_adapter<grid2d> block_iterator() {
         return block_iterator_adapter<grid2d>(*this);
@@ -193,16 +188,17 @@ public:
     reference       at(position p)       { return at(p.first, p.second); }
     const_reference at(position p) const { return at(p.first, p.second); }
 
-    reference at_or(unsigned x, unsigned y, reference value) {
-        return is_valid_position(x, y) ? at(x, y) : value;
-    }
+    //reference at_or(unsigned x, unsigned y, reference value) {
+    //    return is_valid_position(x, y) ? at(x, y) : value;
+    //}
 
-    const_reference at_or(unsigned x, unsigned y, const_reference value) const {
-        return is_valid_position(x, y) ? at(x, y) : value;
-    }
+    //const_reference at_or(unsigned x, unsigned y, const_reference value) const {
+    //    return is_valid_position(x, y) ? at(x, y) : value;
+    //}
 
-    typedef grid_block<T, true>  const_block;
-    typedef grid_block<T, false> block;
+    block block_at(unsigned x, unsigned y) {
+        return const_block(this, x, y);
+    }
 
     const_block block_at(unsigned x, unsigned y) const {
         return const_block(this, x, y);
@@ -328,9 +324,10 @@ template <typename T, bool Const = false>
 class grid_block {
     template <typename, bool> friend class grid_block;
 public:
-    typedef typename make_cv_if<grid2d<T>, Const>::type grid_type;
-    typedef typename grid_type::pointer         pointer;
-    typedef typename grid_type::const_pointer   const_pointer;
+    typedef typename bklib::make_cv_if<grid2d<T>, Const>::type grid_type;
+    
+    typedef typename grid_type::pointer       pointer;
+    typedef typename grid_type::const_pointer const_pointer;
 
     grid_block()
         : grid_(nullptr)
@@ -352,9 +349,11 @@ public:
     grid_block(
         grid_type* grid, size_t offset
     )
-        : grid_(BK_CHECK_PTR(grid))
-        , x(grid->to_position(offset).first)
-        , y(grid->to_position(offset).second)
+        : grid_block(
+            grid,
+            grid ? grid->to_position(offset).first  : 0,
+            grid ? grid->to_position(offset).second : 0
+        )
     {
     }
 
@@ -382,7 +381,6 @@ public:
     const_pointer north_west() const { return get_(-1, -1); }
     const_pointer south_east() const { return get_( 1,  1); }
     const_pointer south_west() const { return get_(-1,  1); }
-
 private :
     grid_type* grid_;
 public:
@@ -511,7 +509,7 @@ namespace detail {
 
 template <typename T, bool Const = false>
 struct block_iterator_base {
-    typedef typename make_cv_if<grid2d<T>, Const>::type grid_type;
+    typedef typename bklib::make_cv_if<grid2d<T>, Const>::type grid_type;
     
     block_iterator_base(grid_type* data = nullptr, ptrdiff_t  offset = 0)
         : data_(data), offset_(offset)
@@ -613,3 +611,5 @@ public:
 private:
     T* grid_;
 };
+
+} //namespace tez

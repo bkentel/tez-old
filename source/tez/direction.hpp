@@ -50,4 +50,24 @@ inline std::pair<signed, signed> direction_vector(direction const d) {
     return std::make_pair(xd[i], yd[i]);
 }
 
+inline direction next_cardinal_direction(direction const d) {
+    auto const i = static_cast<size_t>(d);
+    return static_cast<direction>((i + 1) % 4u);
+}
+
+inline direction prev_cardinal_direction(direction const d) {
+    auto const i = static_cast<size_t>(d);
+    return static_cast<direction>((i - 1) % 4u);
+}
+
+//==============================================================================
+//! Return a uniformly distributed random direction NSEW.
+//==============================================================================
+template <typename T>
+inline direction random_cardinal_direction(T& random) {
+    return static_cast<direction>(
+        std::uniform_int_distribution<>(0, 3)(random)
+    );
+}
+
 } // namespace tez

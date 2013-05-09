@@ -54,3 +54,24 @@ private:
 inline void swap(map& a, map& b) {
     a.swap(b);
 }
+
+class path_generator {
+public:
+    typedef bklib::random_wrapper<unsigned> random_t;
+    typedef bklib::point2d<unsigned> point_t;
+    typedef std::discrete_distribution<unsigned> distribution_t;
+
+    explicit path_generator(random_t random);
+
+    bool generate(room const& origin, map const& m, direction dir);
+
+    void write_path(map& out);
+private:   
+    distribution_t path_dist_n_;
+    distribution_t path_dist_s_;
+    distribution_t path_dist_e_;
+    distribution_t path_dist_w_;
+
+    std::vector<point_t> path_;
+    random_t random_;
+};

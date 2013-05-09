@@ -69,6 +69,8 @@ static_assert(sizeof(footer) == 26, "bad size");  // sanity check.
 
 } // namespace
 
+using bklib::image_targa;
+
 class image_targa::impl_t {
 public:
     impl_t(

@@ -1,9 +1,9 @@
 #include "pch.hpp"
-#include "grid2d.hpp"
-
-#include "scope_exit.hpp"
+#include "tez/grid2d.hpp"
 
 #include <gtest/gtest.h>
+
+using namespace tez;
 
 namespace {
 

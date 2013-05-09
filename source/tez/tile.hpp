@@ -2,58 +2,46 @@
 
 #include "tile_category.hpp"
 
-#include <memory>
 #include <cstdint>
 
+namespace tez {
+
 struct tile_info {
+
 };
+
+template <typename Tag, typename T>
+struct handle {
+    T value;
+};
+
+typedef handle<struct tile_info_handle_tag, uint32_t> tile_info_handle;
+typedef handle<struct texture_handle_tag, uint16_t>   texture_handle;
 
 class tile_data {
 public:
+    typedef tile_info_handle info_handle_t;
+    typedef texture_handle   texture_handle_t;
+
     tile_data()
-        : info(nullptr)
-        , type(tile_category::empty)
-        , texture_id(0)
+        : type(tile_category::empty)
     {
-    }
-
-    tile_data(tile_data&& other)
-        : info(std::move(other.info))
-        , type(other.type)        
-        , texture_id(other.texture_id)
-    {
-    }
-
-    tile_data& operator=(tile_data&& rhs) {
-        swap(rhs);
-        return *this;
     }
 
     void swap(tile_data& other) {
         using std::swap;
 
-        swap(info, other.info);
-        swap(texture_id, other.texture_id);
         swap(type, other.type);
     }
 
-    typedef std::unique_ptr<tile_info> info_ptr;
-
-    info_ptr      info;
-    uint32_t      reserved1;
     tile_category type;
-    uint8_t       reserved0;
-    uint16_t      texture_id;
-private:
-    tile_data(tile_data const&)            BK_DELETE;
-    tile_data& operator=(tile_data const&) BK_DELETE;
 };
-
-static_assert(sizeof(tile_data) == 16, "unexpected size");
 
 inline void swap(tile_data& a, tile_data& b) {
     a.swap(b);
 }
+
+} //namespace tez
 
 //////////////////////////////////////////////////////////////////////////////////
 ////! Random access iterator over a 2D sub-region of a tile_map.

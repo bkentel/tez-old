@@ -1,15 +1,21 @@
 #pragma once
 
-#include "util.hpp"
+#include "bklib/util.hpp"
+#include "bklib/geometry.hpp"
+
 #include "tile_category.hpp"
 #include "grid2d.hpp"
-#include "geometry.hpp"
 #include "room.hpp"
+
+#include <vector>
+
+namespace tez {
 
 class generator {
 public:
-    typedef random_wrapper<unsigned> random_t;
-    typedef grid2d<tile_category>    grid_t;
+    typedef bklib::random_wrapper<unsigned> random_t;
+    typedef grid2d<tile_category>           grid_t;
+    typedef bklib::point2d<unsigned>        connection_point;
 
     generator(random_t random) : random_(random) {}
 protected:
@@ -24,6 +30,8 @@ public:
     simple_room_generator(random_t random);
 
     room generate();
+
+    static connection_point find_connection_point(direction side, random_t random);
 };
 
 //==============================================================================
@@ -31,34 +39,20 @@ public:
 //==============================================================================
 class compound_room_generator : public generator {
 public:
+    typedef bklib::point2d<signed> point_t;
+
     compound_room_generator(random_t random);
 
     room generate();
+
+    static connection_point find_connection_point(direction side, random_t random);
 private:
-    typedef point2d<signed> point_t;
+    
     
     grid_t make_compound_room_base_();
     
     std::vector<point_t> points_; //list of occupied points
 };
 
-class path_generator {
-public:
-    explicit path_generator(random_wrapper<unsigned> random);
 
-    bool generate(room const& origin, map const& m, direction dir);
-
-    void write_path(map& out);
-private:
-    typedef std::discrete_distribution<unsigned> distribution_t;
-    
-    distribution_t path_dist_n_;
-    distribution_t path_dist_s_;
-    distribution_t path_dist_e_;
-    distribution_t path_dist_w_;
-
-    typedef point2d<unsigned> point_t;
-
-    std::vector<point_t> path_;
-    random_wrapper<unsigned> random_;
-};
+} //namespace tez

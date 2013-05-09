@@ -1,23 +1,26 @@
 #pragma once
 
-#include "types.hpp"
 #include "bklib/geometry.hpp"
+#include "bklib/util.hpp"
+
+#include "types.hpp"
 #include "grid2d.hpp"
-#include "util.hpp"
 #include "tile_category.hpp"
+#include "direction.hpp"
 
 #include <functional>
 
-class map;
+namespace tez {
 
 //==============================================================================
 //! Room.
 //==============================================================================
 class room {
-    friend map;
+
 public:
-    typedef rect<signed>          rect_t;
-    typedef point2d<unsigned>     point_t;
+    typedef bklib::random_wrapper<unsigned> random_t;
+    typedef bklib::rect<signed>          rect_t;
+    typedef bklib::point2d<unsigned>     point_t;
     typedef grid2d<tile_category> grid_t;
 
     typedef grid_t::iterator       iterator;
@@ -27,7 +30,7 @@ public:
         : data_(std::move(grid))
         , rect_(0, 0, data_.width(), data_.height())
     {
-        BK_ASSERT(rect_.is_rect());
+        BK_ASSERT(rect_);
     }
     
     room(room&& other)
@@ -75,11 +78,11 @@ public:
     }
     //--------------------------------------------------------------------------
     void translate_by(signed dx, signed dy) {
-        rect_.move_by(dx, dy);
+        rect_.translate_by(dx, dy);
     }
 
     void translate_to(signed x, signed y) {
-        rect_.move_to(x, y);
+        rect_.translate_to(x, y);
     }
     //--------------------------------------------------------------------------
     tile_category at(unsigned x, unsigned y) const {
@@ -94,7 +97,7 @@ public:
         return data_.block_at(x, y);
     }
 
-    point_t find_connectable_point(random_wrapper<unsigned> random, direction dir) const;
+    point_t find_connectable_point(random_t random, direction side) const;
 private:
     room(room const&)            BK_DELETE;
     room& operator=(room const&) BK_DELETE;
@@ -106,6 +109,8 @@ private:
 inline void swap(room& a, room& b) {
     a.swap(b);
 }
+
+} //namespace tez
 
 //template <typename T, T t>
 //struct enum_value {

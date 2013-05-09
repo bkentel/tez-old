@@ -77,7 +77,7 @@ inline T max(T const head, Ts const... tail) {
 //! Accumulates the minimum and maximum value pass to operator().
 //! @tparam T a numeric type.
 //==============================================================================
-template <typename T>
+template <typename T = signed>
 struct min_max {
     static_assert(std::is_arithmetic<T>::value, "T must be arithmetic");
 
@@ -150,5 +150,106 @@ inline auto make_random_wrapper(T& random)
 {
     return random_wrapper<typename T::result_type>(random);
 }
+
+template <typename T, typename U>
+class discriminated_union {
+public:
+    typedef T a_type;
+    typedef U b_type;
+
+    template <typename V, typename... Types>
+    static discriminated_union make(Types&&... params) {
+        static_assert(
+            std::is_same<a_type, V>::value || std::is_same<b_type, V>::value,
+            "Not a union type"
+        );
+        return discriminated_union(
+            static_cast<V*>(nullptr),
+            std::forward<Types>(params)...
+        );
+    }
+
+    ~discriminated_union() {
+        if (is_a_type_) {
+            get_a_().~a_type();
+        } else {
+            get_b_().~b_type();
+        }
+    }
+
+    void swap(discriminated_union& other) {
+        using std::swap;
+
+        if (is_a_type_ ^ other.is_a_type_) {
+            auto& a =  is_a_type_ ? *this : other;
+            auto& b = !is_a_type_ ? *this : other;
+
+            swap(a.is_a_type_, b.is_a_type_);
+            
+            a_type temp = std::move(a.get_a_());
+            
+            a.get_a_().~a_type();
+            new (std::addressof(a.get_b_())) b_type(std::move(b.get_b_()));
+            
+            b.get_b_().~b_type();
+            new (std::addressof(b.get_a_())) a_type(std::move(temp));
+        } else if (is_a_type_) {
+            a_type& a = get_a_();
+            a_type& b = other.get_a_();
+
+            swap(a, b);
+        } else {
+            b_type& a = get_b_();
+            b_type& b = other.get_b_();
+
+            swap(a, b);
+        }
+    }
+
+    template <typename V>
+    bool is_type() const;
+
+    template <>
+    bool is_type<a_type>() const { return is_a_type_; }
+
+    template <>
+    bool is_type<b_type>() const { return !is_a_type_; }
+
+    explicit operator a_type&() { return get_a_(); }
+    explicit operator b_type&() { return get_b_(); }
+private:
+    template <typename... Types>
+    discriminated_union(a_type*, Types&&... params)
+        : is_a_type_(true)
+    {
+        new (std::addressof(get_a_())) a_type(std::forward<Types>(params)...);
+    }
+
+    template <typename... Types>
+    discriminated_union(b_type*, Types&&... params)
+        : is_a_type_(false)
+    {
+        new (std::addressof(get_b_())) b_type(std::forward<Types>(params)...);
+    }
+
+    a_type& get_a_() {
+        return reinterpret_cast<a_type&>(storage_);
+    }
+
+    a_type const& get_a_() const {
+        return const_cast<discriminated_union*>(this)->get_a_();
+    }
+
+    b_type& get_b_() {
+        return reinterpret_cast<b_type&>(storage_);
+    }
+
+    b_type const& get_b_() const {
+        return const_cast<discriminated_union*>(this)->get_b_();
+    }
+
+    typename std::aligned_union<1, a_type, b_type>::type storage_;
+    bool is_a_type_;
+};
 
 } //namespace bklib

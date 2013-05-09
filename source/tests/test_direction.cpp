@@ -46,3 +46,18 @@ TEST(Direction, Vector) {
         EXPECT_THROW(check(dir::none, dir::here), assertion_failure);
     }
 }
+
+TEST(Direction, NextPrevCardinal) {
+    using namespace tez;
+    typedef direction dir;
+
+    EXPECT_EQ(dir::south, next_cardinal_direction(dir::north));
+    EXPECT_EQ(dir::east,  next_cardinal_direction(dir::south));
+    EXPECT_EQ(dir::west,  next_cardinal_direction(dir::east));
+    EXPECT_EQ(dir::north, next_cardinal_direction(dir::west));
+
+    EXPECT_EQ(dir::west,  prev_cardinal_direction(dir::north));
+    EXPECT_EQ(dir::north, prev_cardinal_direction(dir::south));
+    EXPECT_EQ(dir::south, prev_cardinal_direction(dir::east));
+    EXPECT_EQ(dir::east,  prev_cardinal_direction(dir::west));
+}
