@@ -16,26 +16,35 @@ namespace tez {
 //! Room.
 //==============================================================================
 class room {
-
 public:
-    typedef bklib::random_wrapper<unsigned> random_t;
-    typedef bklib::rect<signed>          rect_t;
-    typedef bklib::point2d<unsigned>     point_t;
-    typedef grid2d<tile_category> grid_t;
+    typedef unsigned index_t;
+    typedef signed   location_t;
+    
+    typedef bklib::rect<location_t> rect_t;
+    typedef bklib::point2d<index_t> connection_point;
+
+    typedef bklib::random_wrapper<> random_t;
+    typedef grid2d<tile_category>   grid_t;
+
+    typedef std::function<connection_point (
+        room const& room, direction side, random_t random
+    )> connection_finder_f;
 
     typedef grid_t::iterator       iterator;
     typedef grid_t::const_iterator const_iterator;
     //--------------------------------------------------------------------------
-    room(grid_t grid)
+    room(grid_t grid, connection_finder_f finder)
         : data_(std::move(grid))
         , rect_(0, 0, data_.width(), data_.height())
+        , finder_(std::move(finder))
     {
         BK_ASSERT(rect_);
     }
     
     room(room&& other)
-        : rect_(other.rect_)
-        , data_(std::move(other.data_))
+        : data_(std::move(other.data_)) 
+        , rect_(other.rect_)
+        , finder_(other.finder_)
     {
     }
     //--------------------------------------------------------------------------
@@ -61,8 +70,9 @@ public:
     void swap(room& other) {
         using std::swap;
 
-        swap(rect_, other.rect_);
-        swap(data_, other.data_);
+        swap(data_,   other.data_);
+        swap(rect_,   other.rect_);
+        swap(finder_, other.finder_);
     }
     //--------------------------------------------------------------------------
     unsigned width()  const { return rect_.width(); }
@@ -97,13 +107,20 @@ public:
         return data_.block_at(x, y);
     }
 
-    point_t find_connectable_point(random_t random, direction side) const;
+    connection_point find_connection_point(
+        direction const side,
+        random_t        random
+    ) const {
+        BK_ASSERT(finder_);
+        return finder_(*this, side, random);
+    }
 private:
     room(room const&)            BK_DELETE;
     room& operator=(room const&) BK_DELETE;
 
-    grid_t data_;    
-    rect_t rect_;
+    grid_t              data_;    
+    rect_t              rect_;
+    connection_finder_f finder_;
 };
 
 inline void swap(room& a, room& b) {

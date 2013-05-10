@@ -1,25 +1,23 @@
 #include "pch.hpp"
 #include "map_layout.hpp"
 
-#include "geometry.hpp"
-#include "room.hpp"
-#include "map.hpp"
-
 #include "room_generator.hpp" //temp
+
+using tez::map_layout;
 
 namespace {
 
 static auto const PADDING = 2;
 
-typedef rect<signed>    rect_t;
-typedef point2d<signed> point_t;
+typedef tez::map_layout::rect_t rect_t;
 
 //==============================================================================
 //! Return a valid rect where the rect given by [where] can be placed,
 //! otherwise return an invalid rect.
 //==============================================================================
-rect_t find_rect_at(
-    rect_t                       where,
+rect_t
+find_rect_at(
+    rect_t           where,
     map_layout::room_list const& rooms
 ) {
     static size_t const COUNT = 4;
@@ -39,7 +37,7 @@ rect_t find_rect_at(
         for (auto const& r : rooms) {
             auto const& other = r.bounds();
                 
-            if (intersection_of(where, other).is_rect()) {
+            if (intersects(where, other)) {
                 intersections[count] = &other;
                 if (++count == COUNT) break;
             }
@@ -59,30 +57,20 @@ rect_t find_rect_at(
 
         auto const& other = *intersections[0];
 
-        auto const left   = distance(where.right,  other.left);
-        auto const right  = distance(where.left,   other.right);
-        auto const top    = distance(where.bottom, other.top);
-        auto const bottom = distance(where.top,    other.bottom);
+        auto const left   = bklib::distance(where.right,  other.left);
+        auto const right  = bklib::distance(where.left,   other.right);
+        auto const top    = bklib::distance(where.bottom, other.top);
+        auto const bottom = bklib::distance(where.top,    other.bottom);
 
-        auto const min_dim = min(left, right, top, bottom);
-            
-        if (min_dim == left) {
-            where = separate_rects<direction::west>::get(
-                where, other, PADDING
-            );
-        } else if (min_dim == right) {
-            where = separate_rects<direction::east>::get(
-                where, other, PADDING
-            );
-        } else if (min_dim == top) {
-            where = separate_rects<direction::north>::get(
-                where, other, PADDING
-            );
-        } else {
-            where = separate_rects<direction::south>::get(
-                where, other, PADDING
-            );
-        }
+        auto const min_dim = bklib::min(left, right, top, bottom);
+        
+        where = (min_dim == left)  ?
+                    bklib::translate_by(where, 0 - left - PADDING, 0)  :
+                (min_dim == right) ?
+                    bklib::translate_by(where, 0 + right + PADDING, 0) :
+                (min_dim == top)   ?
+                    bklib::translate_by(where, 0, 0 - top - PADDING) :
+                    bklib::translate_by(where, 0, 0 + bottom + PADDING);
     }
 
     return where;
@@ -104,7 +92,7 @@ rect_t get_centered_rect(
         static_cast<signed>(r.height());
 
     return rect_t(
-        point_t(
+        bklib::make_point(
             reference.left + dx / 2,
             reference.top  + dy / 2
         ),
@@ -119,14 +107,26 @@ rect_t get_centered_rect(
 //! returns an invalid rect.
 //==============================================================================
 rect_t get_rect_relative_to(
-    direction const  dir,
-    rect_t    const  reference,
-    room      const& r
+    tez::direction const  dir,
+    rect_t         const  reference,
+    tez::room      const& r
 ) {
     auto const room_rect   = get_centered_rect(reference, r.bounds());
     auto       result_rect = rect_t(0, 0, 0, 0);
 
-    return separate_rects_toward(dir, room_rect, reference, PADDING);
+    auto const left   = bklib::distance(room_rect.right,  reference.left);
+    auto const right  = bklib::distance(room_rect.left,   reference.right);
+    auto const top    = bklib::distance(room_rect.bottom, reference.top);
+    auto const bottom = bklib::distance(room_rect.top,    reference.bottom);
+
+    switch (dir) {
+    case tez::direction::north : return bklib::translate_by(room_rect, 0, 0 - PADDING - top);
+    case tez::direction::south : return bklib::translate_by(room_rect, 0, 0 + PADDING + bottom);
+    case tez::direction::east :  return bklib::translate_by(room_rect, 0 - PADDING - left, 0);
+    case tez::direction::west :  return bklib::translate_by(room_rect, 0 + PADDING + right, 0 );
+    }
+
+    return room_rect;
 }
 
 } //namespace
@@ -134,7 +134,7 @@ rect_t get_rect_relative_to(
 //==============================================================================
 //! Add [r] to the layout such that it intersects no existing rooms.
 //==============================================================================
-void map_layout::add_room(room r, random_t random) {
+void map_layout::add_room(tez::room r, random_t random) {
     //--------------------------------------------------------------------------
     // Add candidates with [r] as the source for all directions other than
     // [from].
@@ -195,16 +195,16 @@ void map_layout::add_room(room r, random_t random) {
         );
 
         //ok
-        if (result_rect.is_rect()) {
+        if (result_rect) {
             add_room(r, result_rect);
-            add_candidates(opposite(candidate.first), result_rect);
+            add_candidates(tez::opposite_direction(candidate.first), result_rect);
 
             break;
         }
     }
 }
 
-map map_layout::make_map() const {
+tez::map map_layout::make_map() const {
     auto const dx = extent_x_.min;
     auto const dy = extent_y_.min;
 
@@ -230,7 +230,7 @@ map map_layout::make_map() const {
         return dir[i];
     };
 
-    auto pg = path_generator(make_random_wrapper(random));
+    auto pg = path_generator(bklib::make_random_wrapper(random));
 
     for (auto const& r : rooms_) {
         bool path = false;

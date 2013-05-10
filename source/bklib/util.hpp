@@ -111,7 +111,7 @@ struct min_max {
 //! Wraps a random number generator to abstract away the differences.
 //! @tparam T a numeric type.
 //==============================================================================
-template <typename T>
+template <typename T = unsigned>
 class random_wrapper {
 public:
     typedef T result_type;

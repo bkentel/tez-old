@@ -78,6 +78,12 @@
     <ClInclude Include="source\tez\room_generator.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="source\tez\map_layout.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\tez\map.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\pch.cpp">
@@ -120,6 +126,15 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="source\tez\room_generator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\tez\map_layout.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\tez\map.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\tests\test_map.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

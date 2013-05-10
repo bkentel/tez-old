@@ -345,30 +345,6 @@
 ////    EXPECT_EQ(r1, r5);
 ////}
 
-//TEST(MapCreation, Test) {
-//    for(unsigned n = 0; n < 1000; ++n) {
-//    std::default_random_engine engine(::GetTickCount());
-//    auto random = make_random_wrapper(engine);
-//
-//    map_layout layout;
-//
-//    auto gen_simple   = simple_room_generator(random);
-//    auto gen_compound = compound_room_generator(random);
-//
-//    for (int i = 0; i < 20; ++i) {
-//        if (i % 4 == 0) {
-//            layout.add_room(gen_compound.generate(), random);
-//        } else {
-//            layout.add_room(gen_simple.generate(), random);
-//        }
-//    }
-//
-//    layout.normalize();
-//    auto test_map = layout.make_map();
-//
-//    std::cout << test_map;
-//    }
-//}
 
 int main(int argc, char* argv[]) {
     ::testing::InitGoogleTest(&argc, argv);

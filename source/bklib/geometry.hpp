@@ -70,6 +70,15 @@ struct point2d {
 template <
     typename T,
     typename U,
+    typename R = typename std::common_type<T, U>::type
+>
+inline point2d<R> make_point(T const x, U const y) {
+    return point2d<R>(x, y);
+}
+
+template <
+    typename T,
+    typename U,
     typename R = typename make_distance_type<
         typename std::common_type<T, U>::type
     >::type
@@ -218,8 +227,8 @@ struct rect {
         return *this;
     }
 
-    template <typename U>
-    rect& translate_by(U const dx, U const dy) {
+    template <typename U, typename V>
+    rect& translate_by(U const dx, V const dy) {
         left   += dx;
         right  += dx;
         top    += dy;
@@ -280,10 +289,25 @@ struct rect {
     }
 
     T left, top, right, bottom;
-};
+}; //rect
 
 template <typename T, typename U>
-rect<T> translate_by(rect<T> r, U dx, U dy) {
+inline bool intersects(rect<T> const a, rect<U> const b) {
+    return a.intersects(b);
+}
+
+template <typename T, typename U>
+inline bool intersects(rect<T> const a, point2d<U> const b) {
+    return a.intersects(b);
+}
+
+template <typename T, typename U>
+inline bool intersects(point2d<T> const a, rect<U> const b) {
+    return b.intersects(a);
+}
+
+template <typename T, typename U, typename V>
+rect<T> translate_by(rect<T> r, U dx, V dy) {
     return r.translate_by(dx, dy);
 }
 
@@ -321,6 +345,23 @@ rect<T> translate_to(rect<T> r, T x, T y) {
 //
 //#undef BK_SPECIALIZE_SEPARATE_RECTS
 //
+//template <typename T>
+//rect<T>
+//separate_rects_toward(
+//    signed dx,
+//    signed dy,
+//    rect<T> const source,
+//    rect<T> const reference,
+//    T       const padding = 0
+//) {
+//    if (dx < 0) {
+//    } else if (dx > 0) {
+//    } else if (dy < 0) {
+//    } else if (dy > 0 ) {
+//    } else {
+//    }
+//}
+//
 ////==============================================================================
 ////! @param dir The #direction in which to translate @c source.
 ////! @param source The #rect to translate.
@@ -354,6 +395,6 @@ rect<T> translate_to(rect<T> r, T x, T y) {
 //
 //    return source;
 //}
-////==============================================================================
+//==============================================================================
 
 } //namespace

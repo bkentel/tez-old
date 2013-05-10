@@ -331,6 +331,8 @@
     <ClInclude Include="source\bklib\scope_exit.hpp" />
     <ClInclude Include="source\tez\direction.hpp" />
     <ClInclude Include="source\tez\grid2d.hpp" />
+    <ClInclude Include="source\tez\map.hpp" />
+    <ClInclude Include="source\tez\map_layout.hpp" />
     <ClInclude Include="source\tez\room.hpp" />
     <ClInclude Include="source\tez\room_generator.hpp" />
     <ClInclude Include="source\tez\room_type.hpp" />
@@ -371,7 +373,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
       <PreprocessToFile Condition="'$(Configuration)|$(Platform)'=='Test_Debug|x64'">false</PreprocessToFile>
     </ClCompile>
+    <ClCompile Include="source\tests\test_map.cpp" />
     <ClCompile Include="source\tests\test_tile.cpp" />
+    <ClCompile Include="source\tez\map.cpp" />
+    <ClCompile Include="source\tez\map_layout.cpp" />
     <ClCompile Include="source\tez\room.cpp" />
     <ClCompile Include="source\tez\room_generator.cpp" />
     <ClCompile Include="source\tez\tile.cpp" />

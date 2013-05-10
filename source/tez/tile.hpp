@@ -6,40 +6,42 @@
 
 namespace tez {
 
-struct tile_info {
 
-};
-
-template <typename Tag, typename T>
-struct handle {
-    T value;
-};
-
-typedef handle<struct tile_info_handle_tag, uint32_t> tile_info_handle;
-typedef handle<struct texture_handle_tag, uint16_t>   texture_handle;
-
-class tile_data {
-public:
-    typedef tile_info_handle info_handle_t;
-    typedef texture_handle   texture_handle_t;
-
-    tile_data()
-        : type(tile_category::empty)
-    {
-    }
-
-    void swap(tile_data& other) {
-        using std::swap;
-
-        swap(type, other.type);
+struct tile_data {
+    template <typename T>
+    T& get_data() {
+        static_assert(sizeof(T) <= sizeof(data), "type is too big");
+        BK_ASSERT(type == T::type);
+        return reinterpret_cast<T&>(data);
     }
 
     tile_category type;
+    
+    struct {
+        uint8_t has_data    : 1;
+        uint8_t is_passable : 1;
+        uint8_t unused0     : 1;
+        uint8_t unused1     : 1;
+        uint8_t unused2     : 1;
+        uint8_t unused3     : 1;
+        uint8_t unused4     : 1;
+        uint8_t unused5     : 1;
+    } flags;
+    
+    uint16_t texture[3];
+    uint64_t data;
 };
 
-inline void swap(tile_data& a, tile_data& b) {
-    a.swap(b);
-}
+struct door_data {
+    static auto const type = tile_category::door;
+
+    enum class door_state {
+        open,
+        closed,
+        locked,
+        broken,
+    } state;
+};
 
 } //namespace tez
 

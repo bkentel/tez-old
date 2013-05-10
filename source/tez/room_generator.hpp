@@ -4,7 +4,6 @@
 #include "bklib/geometry.hpp"
 
 #include "tile_category.hpp"
-#include "grid2d.hpp"
 #include "room.hpp"
 
 #include <vector>
@@ -13,9 +12,9 @@ namespace tez {
 
 class generator {
 public:
-    typedef bklib::random_wrapper<unsigned> random_t;
-    typedef grid2d<tile_category>           grid_t;
-    typedef bklib::point2d<unsigned>        connection_point;
+    typedef bklib::random_wrapper<> random_t;
+    typedef grid2d<tile_category>   grid_t;
+    typedef room::connection_point  connection_point;
 
     generator(random_t random) : random_(random) {}
 protected:
@@ -31,7 +30,9 @@ public:
 
     room generate();
 
-    static connection_point find_connection_point(direction side, random_t random);
+    static connection_point find_connection_point(
+        room const& room, direction side, random_t random
+    );
 };
 
 //==============================================================================
@@ -39,18 +40,15 @@ public:
 //==============================================================================
 class compound_room_generator : public generator {
 public:
-    typedef bklib::point2d<signed> point_t;
-
     compound_room_generator(random_t random);
 
     room generate();
 
-    static connection_point find_connection_point(direction side, random_t random);
-private:
-    
-    
-    grid_t make_compound_room_base_();
-    
+    static connection_point find_connection_point(
+        room const& room, direction side, random_t random
+    );
+private:    
+    typedef bklib::point2d<signed> point_t;
     std::vector<point_t> points_; //list of occupied points
 };
 

@@ -4,6 +4,8 @@
 #include "tile.hpp"
 #include "room.hpp"
 
+namespace tez {
+
 //==============================================================================
 // A 2D grid of tiles.
 //==============================================================================
@@ -75,3 +77,5 @@ private:
     std::vector<point_t> path_;
     random_t random_;
 };
+
+} //namespace tez
