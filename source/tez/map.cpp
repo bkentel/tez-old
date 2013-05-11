@@ -1,8 +1,18 @@
 #include "pch.hpp"
 #include "map.hpp"
 
+namespace {
+    static tez::tile_data default_tile = {
+        tez::tile_category::empty,
+        {0},
+        0, 0, 0,
+        0
+    };
+
+} //namespace
+
 tez::map::map(unsigned width, unsigned height)
-    : data_(width, height)
+    : data_(width, height, default_tile)
 {
 }
 
@@ -79,124 +89,123 @@ tez::path_generator::path_generator(bklib::random_wrapper<> random)
 {
 }
 
-bool tez::path_generator::generate(tez::room const& origin, tez::map const& m, direction const dir) {
-    //auto const map_w = m.width();
-    //auto const map_h = m.height();
+bool tez::path_generator::generate(
+    tez::room const& origin,
+    tez::map  const& map,
+    direction const  dir
+) {
+    auto const map_w = map.width();
+    auto const map_h = map.height();
+    
+    auto const bounds = origin.bounds();
+    //--------------------------------------------------------------------------
+    // Get a random unit vector
+    //--------------------------------------------------------------------------
+    BK_DECLARE_DIRECTION_ARRAYS(dir_x, dir_y);
+    
+    auto const get_random_vector = [&](distribution_t const& dist) {
+        auto const i = dist(random_);
+        return bklib::make_point(dir_x[i], dir_y[i]);
+    };
+    //--------------------------------------------------------------------------
+    auto const is_in_bounds = [&](unsigned const x, unsigned const y) {
+        return (x >= 0) && (y >= 0) && (x < map_w) && (y < map_h);
+    };
+    //--------------------------------------------------------------------------
+    auto const is_pathable = [&](unsigned const x, unsigned const y) {
+        auto const c = map.at(x, y).type;
+        return (c == tile_category::corridor) || (c == tile_category::empty);
+    };
+    //--------------------------------------------------------------------------
+    auto const is_connectable = [&](unsigned const x, unsigned const y) -> bool {
+        auto const& b = map.block_at(x, y);
 
-    ////--------------------------------------------------------------------------
-    //// Get a random unit vector
-    ////--------------------------------------------------------------------------
-    //auto const get_random_vector = [&](distribution_t const& dist) -> bklib::point2d<signed> {
-    //    signed const dir_x[] = { 0, 0, 1, -1};
-    //    signed const dir_y[] = {-1, 1, 0,  0};
+        auto const n = b.north() ? b.north()->type : tile_category::empty;
+        auto const s = b.south() ? b.south()->type : tile_category::empty;
+        auto const e = b.east()  ? b.east()->type  : tile_category::empty;
+        auto const w = b.west()  ? b.west()->type  : tile_category::empty;
 
-    //    auto const i = dist(random_);
-    //    
-    //    return bklib::point2d<signed>(dir_x[i], dir_y[i]);
-    //};
-    ////--------------------------------------------------------------------------
-    //auto const is_in_bounds = [&](unsigned const x, unsigned const y) {
-    //    return (x >= 0) && (y >= 0) && (x < map_w) && (y < map_h);
-    //};
-    ////--------------------------------------------------------------------------
-    //auto const is_pathable = [&](unsigned const x, unsigned const y) {
-    //    auto const c = m.at(x, y).type;
-    //    return (c == tile_category::corridor) || (c == tile_category::empty);
-    //};
-    ////--------------------------------------------------------------------------
-    //auto const is_connectable = [&](unsigned const x, unsigned const y) -> bool {
-    //    auto const& b = m.block_at(x, y);
+        static auto const C = tile_category::ceiling;
+        auto const check = [&](tile_category const c) {
+            return c == tile_category::ceiling || c == tile_category::wall;
+        };
 
-    //    auto const n = b.north() ? b.north()->type : tile_category::empty;
-    //    auto const s = b.south() ? b.south()->type : tile_category::empty;
-    //    auto const e = b.east()  ? b.east()->type  : tile_category::empty;
-    //    auto const w = b.west()  ? b.west()->type  : tile_category::empty;
+        return (n == C && s == C) ^ (e == C && w == C) &&
+            (check(e) || check(w) || check(n) || check(s));
+    };
+    //--------------------------------------------------------------------------
+    auto const is_on_path = [&](unsigned const x, unsigned const y) {
+        return std::find_if(path_.cbegin(), path_.cend(), [&](point_t const p) {
+            return p.x == x && p.y == y;
+        }) != path_.cend();
+    };
+    //--------------------------------------------------------------------------
+    auto const is_in_origin = [&](unsigned const x, unsigned const y) {
+        return bklib::intersects(bounds, bklib::make_point(x, y));
+    };
+    //--------------------------------------------------------------------------
+    auto p = origin.find_connection_point(dir, random_);
+    BK_ASSERT(is_in_bounds(p.x, p.y));
+    auto const check_val = map.at(p.x, p.y).type;
+    BK_ASSERT(check_val != tile_category::empty && check_val != tile_category::floor);
 
-    //    static auto const C = tile_category::ceiling;
-    //    auto const check = [&](tile_category const c) {
-    //        return c == tile_category::ceiling || c == tile_category::wall;
-    //    };
+    distribution_t const& dist =
+        (dir == direction::north ) ? path_prob_n :
+        (dir == direction::south ) ? path_prob_s :
+        (dir == direction::east )  ? path_prob_e :
+        (dir == direction::west )  ? path_prob_w : path_prob_w;
 
-    //    return (n == C && s == C) ^ (e == C && w == C) &&
-    //        (check(e) || check(w) || check(n) || check(s));
+    path_.clear();
+    path_.push_back(p);
 
-    //    //return true;
-    //};
-    ////--------------------------------------------------------------------------
-    //auto const is_on_path = [&](unsigned const x, unsigned const y) {
-    //    return std::find_if(path_.cbegin(), path_.cend(), [&](point_t const p) {
-    //        return p.x == x && p.y == y;
-    //    }) != path_.cend();
-    //};
-    ////--------------------------------------------------------------------------
-    //auto const bounds = origin.bounds();
-    //auto const is_in_origin = [&](unsigned const x, unsigned const y) {
-    //    bklib::intersects(bounds, bklib::make_point(x, y));
-    //};
-    ////--------------------------------------------------------------------------
-    //auto p = origin.find_connectable_point(random_, dir);
-    //BK_ASSERT(is_in_bounds(p.x, p.y));
-    //auto const check_val = m.at(p.x, p.y).type;
-    //BK_ASSERT(check_val != tile_category::empty && check_val != tile_category::floor);
+    unsigned fail_count = 0;
+    bool     found_path = false;
 
-    //distribution_t const& dist =
-    //    (dir == direction::north ) ? path_prob_n :
-    //    (dir == direction::south ) ? path_prob_s :
-    //    (dir == direction::east )  ? path_prob_e :
-    //    (dir == direction::west )  ? path_prob_w : path_prob_w;
+    while (!found_path && fail_count < 10) {
+        auto const v = get_random_vector(dist);
+        auto const x = p.x + v.x;
+        auto const y = p.y + v.y;
 
-    //path_.clear();
-    //path_.push_back(p);
+        if (!is_in_bounds(x, y)) {
+            fail_count++;
+            continue;
+        }
 
-    //unsigned fail_count = 0;
-    //bool     found_path = false;
+        if (!is_pathable(x, y)) {
+            if (is_in_origin(x, y) || !is_connectable(x, y) || is_on_path(x, y)) {
+                fail_count++;
+                continue;
+            }
+             
+             found_path = true;
+        }
 
-    //while (!found_path && fail_count < 10) {
-    //    auto const v = get_random_vector(dist);
-    //    auto const x = p.x + v.x;
-    //    auto const y = p.y + v.y;
+        path_.emplace_back(x, y);
+        p.x = x;
+        p.y = y;
+    }
 
-    //    if (!is_in_bounds(x, y)) {
-    //        fail_count++;
-    //        continue;
-    //    }
-
-    //    if (!is_pathable(x, y)) {
-    //        if (is_in_origin(x, y) || !is_connectable(x, y) || is_on_path(x, y)) {
-    //            fail_count++;
-    //            continue;
-    //        }
-    //         
-    //         found_path = true;
-    //    }
-
-    //    path_.emplace_back(x, y);
-    //    p.x = x;
-    //    p.y = y;
-    //}
-
-    //if (!found_path || path_.size() < 2) {
-    //    return false;
-    //}
+    if (!found_path || path_.size() < 2) {
+        return false;
+    }
 
     return true;
 }
 
 void tez::path_generator::write_path(map& out) {
     BK_ASSERT(path_.size() >= 2);
-
-    auto const path = [&](unsigned const i) -> tile_data& {
-        return out.at(path_[i].x, path_[i].y);
-    };
-
-    unsigned i = 0;
-
-    path(i).type = tile_category::door;
-
-    while (i < path_.size() - 1) {
-        path(i++).type = tile_category::corridor;
+ 
+    for (unsigned i = 1; i < path_.size() - 1; ++i) {
+        auto& tile = out.at(path_[i].x, path_[i].y);
+        tile.type = tile_category::corridor;
     }
-    path(i).type = tile_category::door;
+
+    auto& first = out.at(path_.front().x, path_.front().y);
+    auto& last  = out.at(path_.back().x, path_.back().y);
+
+    first.type = last.type = tile_category::door;
+    first.get_data<door_data>().state =
+        last.get_data<door_data>().state = door_data::door_state::open;
 
     path_.clear();
 }

@@ -364,17 +364,18 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test_Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test_Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="source\tests\test_direction.cpp" />
-    <ClCompile Include="source\tests\test_grid2d.cpp" />
-    <ClCompile Include="source\tests\test_main.cpp">
+    <ClCompile Include="source\tez\tests\test_direction.cpp" />
+    <ClCompile Include="source\tez\tests\test_grid2d.cpp" />
+    <ClCompile Include="source\tez\tests\test_main.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
       <PreprocessToFile Condition="'$(Configuration)|$(Platform)'=='Test_Debug|x64'">false</PreprocessToFile>
     </ClCompile>
-    <ClCompile Include="source\tests\test_map.cpp" />
-    <ClCompile Include="source\tests\test_tile.cpp" />
+    <ClCompile Include="source\tez\tests\test_map.cpp" />
+    <ClCompile Include="source\tez\tests\test_room.cpp" />
+    <ClCompile Include="source\tez\tests\test_tile.cpp" />
     <ClCompile Include="source\tez\map.cpp" />
     <ClCompile Include="source\tez\map_layout.cpp" />
     <ClCompile Include="source\tez\room.cpp" />

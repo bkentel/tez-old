@@ -1,13 +1,13 @@
 #include "pch.hpp"
-#include "room.hpp"
+#include "tez/room.hpp"
 
-#include "room_generator.hpp"
+#include "tez/room_generator.hpp"
 
 #include <gtest/gtest.h>
 
 class RoomTest : public ::testing::Test {
 public :
-    typedef room::grid_t grid_t;
+    typedef tez::room::grid_t grid_t;
 
     static const unsigned WIDTH  = 5;
     static const unsigned HEIGHT = 10;
@@ -15,13 +15,13 @@ public :
     RoomTest()
         : engine(std::random_device()())
         , test_room(
-            simple_room_generator(make_random_wrapper(engine)).generate()
+            tez::simple_room_generator(bklib::make_random_wrapper(engine)).generate()
         )
     {
     }
 
     std::default_random_engine engine;
-    room test_room;
+    tez::room test_room;
 };
 
 TEST_F(RoomTest, Bounds) {
@@ -48,7 +48,7 @@ TEST_F(RoomTest, Bounds) {
 
     for (unsigned y = 0; y < h; ++y) {
         for (unsigned x = 0; x < w; ++x) {
-            EXPECT_NE(tile_category::empty, test_room.at(x, y));
+            EXPECT_NE(tez::tile_category::empty, test_room.at(x, y));
         }
     }
 
@@ -64,14 +64,14 @@ TEST_F(RoomTest, Iterator) {
 }
 
 TEST_F(RoomTest, FindConnectable) {
-    auto random = make_random_wrapper(engine);
+    auto random = bklib::make_random_wrapper(engine);
 
     auto const w = test_room.width();
     auto const h = test_room.height();
 
     for (auto i = 0; i < 100; ++i) {
         auto const p =
-            test_room.find_connectable_point(random, direction::north);
+            test_room.find_connection_point(tez::direction::north, random);
         EXPECT_EQ(0U, p.y);
         EXPECT_LT(p.x, w);
         EXPECT_GE(p.x, 0U);
@@ -79,7 +79,7 @@ TEST_F(RoomTest, FindConnectable) {
 
     for (auto i = 0; i < 100; ++i) {
         auto const p =
-            test_room.find_connectable_point(random, direction::south);
+            test_room.find_connection_point(tez::direction::south, random);
         EXPECT_EQ(h-1, p.y);
         EXPECT_LT(p.x, w);
         EXPECT_GE(p.x, 0U);
@@ -87,7 +87,7 @@ TEST_F(RoomTest, FindConnectable) {
 
     for (auto i = 0; i < 100; ++i) {
         auto const p =
-            test_room.find_connectable_point(random, direction::west);
+            test_room.find_connection_point(tez::direction::west, random);
         EXPECT_EQ(0U, p.x);
         EXPECT_LT(p.y, h);
         EXPECT_GE(p.y, 0U);
@@ -95,7 +95,7 @@ TEST_F(RoomTest, FindConnectable) {
 
     for (auto i = 0; i < 100; ++i) {
         auto const p =
-            test_room.find_connectable_point(random, direction::east);
+            test_room.find_connection_point(tez::direction::east, random);
         EXPECT_EQ(w-1, p.x);
         EXPECT_LT(p.y, h);
         EXPECT_GE(p.y, 0U);
@@ -107,10 +107,10 @@ TEST_F(RoomTest, Constructor) {
 }
 
 TEST_F(RoomTest, SwapMove) {
-    auto random = make_random_wrapper(engine);
+    auto random = bklib::make_random_wrapper(engine);
 
     auto& room_a = test_room;
-    auto  room_b = room(simple_room_generator(random).generate());
+    auto  room_b = tez::room(tez::simple_room_generator(random).generate());
 
     const unsigned      W0 = 5;
     const unsigned      H0 = 10;
@@ -125,5 +125,4 @@ TEST_F(RoomTest, SwapMove) {
     
     EXPECT_EQ(W1, room_a.width());    
     EXPECT_EQ(H1, room_a.height());
-    
 }

@@ -50,15 +50,15 @@ tez::simple_room_generator::find_connection_point(
 
     unsigned const x =
         (side == direction::west) ? 0 :
-        (side == direction::east) ? w : distribution_t(0, h)(random);
+        (side == direction::east) ? w : distribution_t(1, w-1)(random);
 
     unsigned const y =
         (side == direction::north) ? 0 :
-        (side == direction::south) ? h : distribution_t(0, w)(random);
+        (side == direction::south) ? h : distribution_t(1, h-1)(random);
 
     BK_ASSERT(room.at(x, y) == tile_category::ceiling);
 
-    return connection_point(x, y);
+    return connection_point(x + room.left(), y + room.top());
 }
 
 tez::compound_room_generator::compound_room_generator(random_t random)
@@ -246,17 +246,18 @@ tez::compound_room_generator::find_connection_point(
 
     //--------------------------------------------------------------------------
     auto const is_in_bounds = [&](unsigned const x, unsigned const y) {
-        return is_ns ? ((y > 0) && (y < h)) : ((x > 0) && (x < w));        
+        return (delta > 0 && primary < primary_size) ||
+               (delta < 0 && primary > 0);
     };
     //--------------------------------------------------------------------------
     auto const is_valid_pos = [&] {
-        if (x > w || y > h) return false;
+        BK_ASSERT(x <= w && y <= h);
         
-        auto const c = room.at(x, y);
+        auto c = room.at(x, y);
         if (c != TARGET) return false;
 
         primary += delta;
-        
+        c = room.at(x, y);
         auto const result = (c == tile_category::floor) ||
             ((c == tile_category::wall) && (search_dir == direction::south));
         
@@ -267,7 +268,7 @@ tez::compound_room_generator::find_connection_point(
     //--------------------------------------------------------------------------
 
     //scan along the primary direction
-    while (is_in_bounds(x, y) && (room.at(x, y) == TARGET)) {
+    while (is_in_bounds(x, y) && (room.at(x, y) != TARGET)) {
         primary += delta;
     }
     BK_ASSERT(room.at(x, y) == TARGET);
@@ -278,6 +279,6 @@ tez::compound_room_generator::find_connection_point(
     }
     BK_ASSERT(room.at(x, y) == TARGET);
 
-    return connection_point(x, y);
+    return connection_point(x + room.left(), y + room.top());
 }
 

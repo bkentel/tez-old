@@ -134,7 +134,7 @@ rect_t get_rect_relative_to(
 //==============================================================================
 //! Add [r] to the layout such that it intersects no existing rooms.
 //==============================================================================
-void map_layout::add_room(tez::room r, random_t random) {
+void map_layout::add_room(tez::room r) {
     //--------------------------------------------------------------------------
     // Add candidates with [r] as the source for all directions other than
     // [from].
@@ -147,7 +147,7 @@ void map_layout::add_room(tez::room r, random_t random) {
             direction::west,
         };
 
-        auto const first = std::uniform_int_distribution<>(0, 3)(random);
+        auto const first = std::uniform_int_distribution<>(0, 3)(random_);
 
         for (unsigned i = 0; i < 4; ++i) {
             auto const dir = direction[(first + i) % 4];
@@ -204,18 +204,7 @@ void map_layout::add_room(tez::room r, random_t random) {
     }
 }
 
-tez::map map_layout::make_map() const {
-    auto const dx = extent_x_.min;
-    auto const dy = extent_y_.min;
-
-    auto result = map(extent_x_.distance(), extent_y_.distance());
-
-    for (auto const& r : rooms_) {
-        result.add_room(r, 0 - dx, 0 - dy);
-    }
-
-    std::default_random_engine random(1984);
-
+tez::map map_layout::make_map() {
     //--------------------------------------------------------------------------
     // Get a random NSEW direction
     //--------------------------------------------------------------------------
@@ -225,27 +214,41 @@ tez::map map_layout::make_map() const {
             direction::east,  direction::west,
         };
 
-        auto const i = std::uniform_int_distribution<unsigned>(0, 3)(random);
+        auto const i = std::uniform_int_distribution<unsigned>(0, 3)(random_);
         
         return dir[i];
     };
-
-    auto pg = path_generator(bklib::make_random_wrapper(random));
+    //--------------------------------------------------------------------------
+    auto result = tez::map(extent_x_.distance(), extent_y_.distance());
 
     for (auto const& r : rooms_) {
-        bool path = false;
-        while (!path) {
-            auto const dir = get_random_direction();
+        //translate the rooms such that all rooms have positive x and y.
+        result.add_room(r, 0 - extent_x_.min, 0 - extent_y_.min);
+    }
+
+    //std::cout << "generating paths..." << std::endl;
+    
+    auto pg = path_generator(bklib::make_random_wrapper(random_));
+
+    unsigned room_num = 0;
+
+    for (auto const& room : rooms_) {
+        //std::cout << "generating paths for room " << (room_num++) << std::endl;
+
+        for (bool path = false; !path; ) {
+            auto const side = get_random_direction();
             
-            switch (dir) {
-            case direction::north : std::cout << "try north...\n"; break;
-            case direction::south : std::cout << "try south...\n"; break;
-            case direction::east  : std::cout << "try east...\n";  break;
-            case direction::west  : std::cout << "try west...\n";  break;
-            }
+            //switch (side) {
+            //case direction::north : std::cout << "trying north side..." << std::endl; break;
+            //case direction::south : std::cout << "trying south side..." << std::endl; break;
+            //case direction::east :  std::cout << "trying east side..." << std::endl; break;
+            //case direction::west :  std::cout << "trying west side..." << std::endl; break;
+            //default : BK_ASSERT(false); break;
+            //}
+
 
             for (unsigned i = 0; !path && i < 10; ++i) {
-                path = pg.generate(r, result, dir);
+                path = pg.generate(room, result, side);
             }
         }
         
