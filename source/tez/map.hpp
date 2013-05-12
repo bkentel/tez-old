@@ -11,6 +11,11 @@ namespace tez {
 //==============================================================================
 class map {
 public:
+    typedef grid2d<tile_data>   grid_t;
+    typedef bklib::point2d<unsigned>   position;
+    typedef grid_t::block       block;
+    typedef grid_t::const_block const_block;
+
     map(unsigned width, unsigned height);
 
     map(map&& other)
@@ -39,18 +44,39 @@ public:
         return data_.at(x, y);
     }
 
-    grid2d<tile_data>::const_block block_at(unsigned x, unsigned y) const {
+    tile_data const& at(position p) const {
+        return data_.at(p.x, p.y);
+    }
+
+    tile_data& at(position p) {
+        return data_.at(p.x, p.y);
+    }
+
+    const_block block_at(unsigned x, unsigned y) const {
         return data_.block_at(x, y);
+    }
+
+    const_block block_at(position p) const {
+        return data_.block_at(p.x, p.y);
     }
     //--------------------------------------------------------------------------
     void add_room(room const& r, signed dx = 0, signed dy = 0);
     //--------------------------------------------------------------------------
+    
+    bool is_valid_position(unsigned x, unsigned y) const {
+        return data_.is_valid_position(x, y);
+    }
+
+    bool is_valid_position(position p) const {
+        return data_.is_valid_position(p.x, p.y);
+    }
+
     friend std::ostream& operator<<(std::ostream& out, map const& m);
 private:
     map(map const&)           BK_DELETE;
     map operator=(map const&) BK_DELETE;
 
-    grid2d<tile_data> data_;
+    grid_t data_;
 };
 
 inline void swap(map& a, map& b) {

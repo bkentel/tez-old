@@ -80,7 +80,9 @@ public:
         : width_(w)
         , height_(h)
         , data_(w*h, value)
-    {    
+    {
+        BK_ASSERT(w > 0);
+        BK_ASSERT(h > 0);
     }
     //--------------------------------------------------------------------------
     // Contruct and fill with the values return from @c function.
@@ -213,7 +215,7 @@ public:
     }
 
     bool is_valid_position(position p) const {
-        return is_valid_position(p.x, p.y);
+        return is_valid_position(p.first, p.second);
     }
 private:
     grid2d(grid2d const&)            BK_DELETE;
@@ -228,8 +230,8 @@ private:
         BK_ASSERT(i < size());
 
         return std::make_pair(
-            static_cast<unsigned>(width_ ? i % width_ : 0),
-            static_cast<unsigned>(width_ ? i / width_ : 0)
+            static_cast<unsigned>(i % width_),
+            static_cast<unsigned>(i / width_)
         );
     }
 
@@ -350,9 +352,9 @@ public:
         grid_type* grid, size_t offset
     )
         : grid_block(
-            grid,
-            grid ? grid->to_position(offset).first  : 0,
-            grid ? grid->to_position(offset).second : 0
+            BK_CHECK_PTR(grid),
+            grid->to_position(offset).first,
+            grid->to_position(offset).second
         )
     {
     }

@@ -7,7 +7,7 @@ using tez::map_layout;
 
 namespace {
 
-static auto const PADDING = 2;
+static auto const PADDING = 1;
 
 typedef tez::map_layout::rect_t rect_t;
 
@@ -17,41 +17,38 @@ typedef tez::map_layout::rect_t rect_t;
 //==============================================================================
 rect_t
 find_rect_at(
-    rect_t           where,
+    rect_t                 where,
     map_layout::room_list const& rooms
 ) {
-    static size_t const COUNT = 4;
+    static size_t const MAX_INTERSECTIONS = 4;
+    rect_t const* intersections[MAX_INTERSECTIONS] = {nullptr};
 
-    rect_t const* intersections[COUNT] = {nullptr};
-
-    //----------------------------------------------------------------------
+    //--------------------------------------------------------------------------
     // Fills [intersections] with up to [COUNT] rects that intersect with
     // [where] and return the number of intersections found.
-    //----------------------------------------------------------------------        
+    //--------------------------------------------------------------------------
     auto const find_intersections = [&] { 
-        for (size_t i = 0; i < COUNT; ++i) {
-            intersections[i] = nullptr;
-        }
-
         unsigned count = 0;
-        for (auto const& r : rooms) {
-            auto const& other = r.bounds();
+        for (auto const& room : rooms) {
+            auto const& bounds = room.bounds();
                 
-            if (intersects(where, other)) {
-                intersections[count] = &other;
-                if (++count == COUNT) break;
+            if (intersects(where, bounds)) {
+                intersections[count++] = &bounds;
+                if (count == MAX_INTERSECTIONS) break;
             }
         }
 
         return count;
     };
-
-    unsigned adjust_count = 0; //numner of attempted adjustments
+    //--------------------------------------------------------------------------
+    static auto const MAX_ATTEMPTS = 5u;
+    
+    unsigned adjust_count       = 0; //numner of attempted adjustments
+    unsigned intersection_count = 0;
 
     //attempt to relocate [where] while there are intersections
-    while (unsigned const intersection_count = find_intersections()) {
-        //TODO: handle cases where more than one intersection is found.
-        if (intersection_count != 1 || adjust_count++ == 4) {
+    while (intersection_count = find_intersections()) {
+        if (adjust_count++ >= MAX_ATTEMPTS) {
             return rect_t(0, 0, 0, 0);
         }
 
@@ -230,7 +227,7 @@ tez::map map_layout::make_map() {
     
     auto pg = path_generator(bklib::make_random_wrapper(random_));
 
-    unsigned room_num = 0;
+    //unsigned room_num = 0;
 
     for (auto const& room : rooms_) {
         //std::cout << "generating paths for room " << (room_num++) << std::endl;

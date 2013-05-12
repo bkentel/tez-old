@@ -50,11 +50,13 @@ tez::simple_room_generator::find_connection_point(
 
     unsigned const x =
         (side == direction::west) ? 0 :
-        (side == direction::east) ? w : distribution_t(1, w-1)(random);
+        (side == direction::east) ? w :
+        distribution_t(1, w-1)(random);
 
     unsigned const y =
         (side == direction::north) ? 0 :
-        (side == direction::south) ? h : distribution_t(1, h-1)(random);
+        (side == direction::south) ? h :
+        distribution_t(2, h-1)(random);
 
     BK_ASSERT(room.at(x, y) == tile_category::ceiling);
 
@@ -253,17 +255,22 @@ tez::compound_room_generator::find_connection_point(
     auto const is_valid_pos = [&] {
         BK_ASSERT(x <= w && y <= h);
         
-        auto c = room.at(x, y);
-        if (c != TARGET) return false;
+        if (room.at(x, y) != TARGET) {
+            return false;
+        }
 
         primary += delta;
-        c = room.at(x, y);
-        auto const result = (c == tile_category::floor) ||
-            ((c == tile_category::wall) && (search_dir == direction::south));
+        BK_ON_SCOPE_EXIT({ primary -= delta; });
         
-        primary -= delta;
+        auto const is_floor = [&](tile_category const c) {
+            return c == tile_category::floor;
+        };
+        auto const is_wall = [&](tile_category const c) {
+            return c == tile_category::wall && search_dir == direction::south;
+        };
 
-        return result;
+        auto const c = room.at(x, y);
+        return is_floor(c) || is_wall(c);
     };
     //--------------------------------------------------------------------------
 

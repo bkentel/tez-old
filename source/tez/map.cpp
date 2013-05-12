@@ -39,7 +39,16 @@ std::ostream& tez::operator<<(std::ostream& out, tez::map const& m) {
         std::cout << std::endl;
 
         for (unsigned x = 0; x < w; ++x) {
-            std::cout << static_cast<char>(m.data_.at(x, y).type);
+            auto const& tile = m.data_.at(x, y);
+            auto const  type = tile.type;
+
+            auto out_char = static_cast<char>(type);
+
+            if (type == tile_category::door) {
+                out_char = tile.get_data<door_data>().state == door_data::door_state::open ? 'O' : 'C';
+            }
+
+            std::cout << out_char;
         }
     }
     
@@ -94,60 +103,87 @@ bool tez::path_generator::generate(
     tez::map  const& map,
     direction const  dir
 ) {
-    auto const map_w = map.width();
-    auto const map_h = map.height();
+    typedef room::connection_point point_t;
+
+    static unsigned const MAX_PATH_FAILURES       = 5;
+    static unsigned const MAX_FIND_START_FAILURES = 5;
     
     auto const bounds = origin.bounds();
+
+    BK_DECLARE_DIRECTION_ARRAYS(dir_x, dir_y);
     //--------------------------------------------------------------------------
     // Get a random unit vector
-    //--------------------------------------------------------------------------
-    BK_DECLARE_DIRECTION_ARRAYS(dir_x, dir_y);
-    
+    //--------------------------------------------------------------------------    
     auto const get_random_vector = [&](distribution_t const& dist) {
         auto const i = dist(random_);
         return bklib::make_point(dir_x[i], dir_y[i]);
     };
     //--------------------------------------------------------------------------
-    auto const is_in_bounds = [&](unsigned const x, unsigned const y) {
-        return (x >= 0) && (y >= 0) && (x < map_w) && (y < map_h);
+    auto const is_pathable = [](tile_category const type) {
+        return (type == tile_category::corridor) ||
+               (type == tile_category::empty);
     };
     //--------------------------------------------------------------------------
-    auto const is_pathable = [&](unsigned const x, unsigned const y) {
-        auto const c = map.at(x, y).type;
-        return (c == tile_category::corridor) || (c == tile_category::empty);
-    };
-    //--------------------------------------------------------------------------
-    auto const is_connectable = [&](unsigned const x, unsigned const y) -> bool {
-        auto const& b = map.block_at(x, y);
-
-        auto const n = b.north() ? b.north()->type : tile_category::empty;
-        auto const s = b.south() ? b.south()->type : tile_category::empty;
-        auto const e = b.east()  ? b.east()->type  : tile_category::empty;
-        auto const w = b.west()  ? b.west()->type  : tile_category::empty;
-
-        static auto const C = tile_category::ceiling;
-        auto const check = [&](tile_category const c) {
-            return c == tile_category::ceiling || c == tile_category::wall;
+    auto const is_connectable = [&](map::const_block const block) -> bool {
+        auto const get = [](tile_data const* tile) {
+            return tile ? tile->type : tile_category::empty;
         };
 
-        return (n == C && s == C) ^ (e == C && w == C) &&
-            (check(e) || check(w) || check(n) || check(s));
+        static auto const CEIL  = tile_category::ceiling;
+        static auto const FLOOR = tile_category::floor;
+        static auto const WALL  = tile_category::wall;
+
+        if (get(block.here()) != CEIL) {
+            return false;
+        }
+
+        auto const n = get(block.north());
+        auto const s = get(block.south());
+        auto const e = get(block.east());
+        auto const w = get(block.west());
+
+        return (n == CEIL && s == CEIL && (e == FLOOR || w == FLOOR)) ||
+               (e == CEIL && w == CEIL && (n == FLOOR || s == WALL));
     };
     //--------------------------------------------------------------------------
-    auto const is_on_path = [&](unsigned const x, unsigned const y) {
-        return std::find_if(path_.cbegin(), path_.cend(), [&](point_t const p) {
-            return p.x == x && p.y == y;
-        }) != path_.cend();
+    auto const is_on_path = [&](point_t const p) {
+        return path_.cend() != std::find_if(
+            path_.cbegin(),
+            path_.cend(), [&](point_t const q) { return p == q; }
+        );
     };
     //--------------------------------------------------------------------------
-    auto const is_in_origin = [&](unsigned const x, unsigned const y) {
-        return bklib::intersects(bounds, bklib::make_point(x, y));
+    auto const is_in_origin = [&](point_t const p) {
+        return bklib::intersects(bounds, p);
     };
     //--------------------------------------------------------------------------
-    auto p = origin.find_connection_point(dir, random_);
-    BK_ASSERT(is_in_bounds(p.x, p.y));
-    auto const check_val = map.at(p.x, p.y).type;
-    BK_ASSERT(check_val != tile_category::empty && check_val != tile_category::floor);
+    auto const find_path_start = [&]() -> std::pair<bool, point_t> {
+        auto const check = [](tile_data const* tile) {
+            return tile ? tile->type != tile_category::door : true;
+        };
+
+        for (unsigned i = 0; i < MAX_FIND_START_FAILURES; ++i) {
+            auto const  p     = origin.find_connection_point(dir, random_);           
+            auto const  type  = map.at(p).type;
+            auto const& block = map.block_at(p);
+                 
+            if ((type == tile_category::ceiling) &&
+                check(block.north()) && check(block.south()) &&
+                check(block.east())  && check(block.west())
+            ) {
+                return std::make_pair(true, p);
+            }
+        }
+        
+        return std::make_pair(false, room::connection_point(0, 0));
+    };
+    //--------------------------------------------------------------------------
+    auto const path_start = find_path_start();
+    if (!path_start.first) {
+        return false;
+    }
+    
+    auto pos = path_start.second;
 
     distribution_t const& dist =
         (dir == direction::north ) ? path_prob_n :
@@ -156,40 +192,32 @@ bool tez::path_generator::generate(
         (dir == direction::west )  ? path_prob_w : path_prob_w;
 
     path_.clear();
-    path_.push_back(p);
+    path_.push_back(pos);
 
-    unsigned fail_count = 0;
-    bool     found_path = false;
+    bool found_path = false;
 
-    while (!found_path && fail_count < 10) {
-        auto const v = get_random_vector(dist);
-        auto const x = p.x + v.x;
-        auto const y = p.y + v.y;
+    for (unsigned i = 1; !found_path && i < MAX_FIND_START_FAILURES; ++i) {
+        auto const p = bklib::translate_by(pos, get_random_vector(dist));
 
-        if (!is_in_bounds(x, y)) {
-            fail_count++;
+        if (!map.is_valid_position(p)) {
             continue;
-        }
-
-        if (!is_pathable(x, y)) {
-            if (is_in_origin(x, y) || !is_connectable(x, y) || is_on_path(x, y)) {
-                fail_count++;
+        } else if (!is_pathable(map.at(p).type)) {
+            if (is_in_origin(p)) {
                 continue;
+            } else if (!is_connectable(map.block_at(p))) {
+                continue;
+            } else if (is_on_path(p)) {
+                continue;
+            } else {
+                found_path = true;
             }
-             
-             found_path = true;
         }
 
-        path_.emplace_back(x, y);
-        p.x = x;
-        p.y = y;
+        path_.emplace_back((pos = p));
+        i--;
     }
 
-    if (!found_path || path_.size() < 2) {
-        return false;
-    }
-
-    return true;
+    return found_path && path_.size() >= 2;
 }
 
 void tez::path_generator::write_path(map& out) {
@@ -204,8 +232,8 @@ void tez::path_generator::write_path(map& out) {
     auto& last  = out.at(path_.back().x, path_.back().y);
 
     first.type = last.type = tile_category::door;
-    first.get_data<door_data>().state =
-        last.get_data<door_data>().state = door_data::door_state::open;
+    first.get_data<door_data>().state = door_data::door_state::open;
+    last.get_data<door_data>().state  = door_data::door_state::closed;
 
     path_.clear();
 }

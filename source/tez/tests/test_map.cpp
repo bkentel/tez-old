@@ -47,6 +47,6 @@ TEST(MapCreation, Test) {
     layout.normalize();
     auto test_map = layout.make_map();
 
-    //std::cout << test_map;
+    std::cout << test_map;
     }
 }

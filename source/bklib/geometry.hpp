@@ -95,6 +95,17 @@ template <typename T, typename U>
 inline double distance(point2d<T> const a, point2d<U> const b) {
     return std::sqrt(distance2(a, b));
 }
+
+template <typename T, typename U, typename V>
+point2d<T> translate_by(point2d<T> p, U dx, V dy) {
+    return p.translate_by(dx, dy);
+}
+
+template <typename T, typename U>
+point2d<T> translate_by(point2d<T> p, point2d<U> d) {
+    return translate_by(p, d.x, d.y);
+}
+
 //==============================================================================
 //! A closed interval.
 //==============================================================================

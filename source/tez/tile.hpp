@@ -15,6 +15,13 @@ struct tile_data {
         return reinterpret_cast<T&>(data);
     }
 
+    template <typename T>
+    T const& get_data() const {
+        static_assert(sizeof(T) <= sizeof(data), "type is too big");
+        BK_ASSERT(type == T::type);
+        return reinterpret_cast<T const&>(data);
+    }
+
     tile_category type;
     
     struct {
