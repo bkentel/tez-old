@@ -15,44 +15,26 @@ typedef tez::map_layout::rect_t rect_t;
 //! Return a valid rect where the rect given by [where] can be placed,
 //! otherwise return an invalid rect.
 //==============================================================================
-rect_t
-find_rect_at(
-    rect_t                 where,
+bool adjust_rect(
+    rect_t&                      where,
     map_layout::room_list const& rooms
 ) {
-    static size_t const MAX_INTERSECTIONS = 4;
-    rect_t const* intersections[MAX_INTERSECTIONS] = {nullptr};
+    static auto const MAX_ATTEMPTS = 5u;   
 
-    //--------------------------------------------------------------------------
-    // Fills [intersections] with up to [COUNT] rects that intersect with
-    // [where] and return the number of intersections found.
-    //--------------------------------------------------------------------------
-    auto const find_intersections = [&] { 
-        unsigned count = 0;
-        for (auto const& room : rooms) {
-            auto const& bounds = room.bounds();
-                
-            if (intersects(where, bounds)) {
-                intersections[count++] = &bounds;
-                if (count == MAX_INTERSECTIONS) break;
-            }
-        }
-
-        return count;
-    };
-    //--------------------------------------------------------------------------
-    static auto const MAX_ATTEMPTS = 5u;
-    
-    unsigned adjust_count       = 0; //numner of attempted adjustments
-    unsigned intersection_count = 0;
+    auto const beg = std::cbegin(rooms);
+    auto const end = std::cend(rooms);
 
     //attempt to relocate [where] while there are intersections
-    while (intersection_count = find_intersections()) {
-        if (adjust_count++ >= MAX_ATTEMPTS) {
-            return rect_t(0, 0, 0, 0);
+    for (auto i = 0; i < MAX_ATTEMPTS; ++i) {
+        auto const it = std::find_if(beg, end, [&](tez::room const& room) {
+            return intersects(where, room.bounds());
+        });        
+
+        if (it == end) {
+            return true;
         }
 
-        auto const& other = *intersections[0];
+        auto const& other = it->bounds();
 
         auto const left   = bklib::distance(where.right,  other.left);
         auto const right  = bklib::distance(where.left,   other.right);
@@ -70,7 +52,7 @@ find_rect_at(
                     bklib::translate_by(where, 0, 0 + bottom + PADDING);
     }
 
-    return where;
+    return false;
 }
 
 //==============================================================================
@@ -131,17 +113,15 @@ rect_t get_rect_relative_to(
 //==============================================================================
 //! Add [r] to the layout such that it intersects no existing rooms.
 //==============================================================================
-void map_layout::add_room(tez::room r) {
+void map_layout::add_room(tez::room room) {
     //--------------------------------------------------------------------------
     // Add candidates with [r] as the source for all directions other than
     // [from].
     //--------------------------------------------------------------------------
     auto const add_candidates = [&](direction const from, rect_t const r) {
         static direction const direction[] = {
-            direction::north,
-            direction::east,
-            direction::south,
-            direction::west,
+            direction::north, direction::east,
+            direction::south, direction::west,
         };
 
         auto const first = std::uniform_int_distribution<>(0, 3)(random_);
@@ -154,51 +134,38 @@ void map_layout::add_room(tez::room r) {
         }
     };
     //--------------------------------------------------------------------------
-    // Finalize the placement of the room [r].
-    //--------------------------------------------------------------------------
-    auto const add_room = [&](room& r, rect_t const where) {
-        r.translate_to(where.left, where.top);
-        rooms_.emplace_back(std::move(r));
-
-        extent_x_(where.left);
-        extent_x_(where.right);
-        extent_y_(where.top);
-        extent_y_(where.bottom);
-    };
-    //--------------------------------------------------------------------------
-        
-    //find a useable candidate
-    for (;;) {
+    auto const get_candidate = [&] {
         if (candidates_.empty()) {
             //add candidates for the rect containing all current rooms.
-            add_candidates(
-                direction::here,
-                rect_t(extent_x_.min, extent_y_.min,
-                       extent_x_.max, extent_y_.max
-                )
-            );
+            add_candidates(direction::here, rect_t(
+                extent_x_.min, extent_y_.min, extent_x_.max, extent_y_.max
+            ));
         }
 
-        //get a candidate location
         auto const candidate = candidates_.front();
         candidates_.pop();
 
-        //try to place the room
-        auto const result_rect = find_rect_at(
-            get_rect_relative_to(
-                candidate.first, candidate.second, r
-            ),
-            rooms_
-        );
+        return candidate;
+    };
+    //--------------------------------------------------------------------------
+    auto where = rect_t(0, 0, 0, 0);
+    auto dir   = direction::here;
 
-        //ok
-        if (result_rect) {
-            add_room(r, result_rect);
-            add_candidates(tez::opposite_direction(candidate.first), result_rect);
-
-            break;
-        }
+    //find a useable candidate
+    while (!where || !adjust_rect(where, rooms_)) {
+        std::tie(dir, where) = get_candidate();
+        where = get_rect_relative_to(dir, where, room);
     }
+
+    add_candidates(tez::opposite_direction(dir), where);
+
+    room.translate_to(where.left, where.top);
+    rooms_.emplace_back(std::move(room));
+
+    extent_x_(where.left);
+    extent_x_(where.right);
+    extent_y_(where.top);
+    extent_y_(where.bottom);
 }
 
 tez::map map_layout::make_map() {
