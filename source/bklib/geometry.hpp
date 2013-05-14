@@ -64,6 +64,13 @@ struct point2d {
         return !(*this == rhs);
     }
 
+    template <typename U>
+    explicit operator point2d<U>() const {
+        return point2d<U>(
+            static_cast<U>(x), static_cast<U>(y)
+        );
+    }
+
     T x, y;
 }; // struct point2d
 
@@ -246,6 +253,11 @@ struct rect {
         bottom += dy;
 
         return *this;
+    }
+
+    template <typename U>
+    explicit operator rect<U>() const {
+        return rect<U>(left, top, right, bottom);
     }
 
     size_type width()  const { return distance(right, left); }

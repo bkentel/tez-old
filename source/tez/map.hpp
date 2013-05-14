@@ -94,6 +94,16 @@ public:
     bool generate(room const& origin, map const& m, direction dir);
 
     void write_path(map& out);
+
+    point_t start_point() const {
+        BK_ASSERT(path_.size() >= 2);
+        return path_.front();
+    }
+
+    point_t end_point() const {
+        BK_ASSERT(path_.size() >= 2);
+        return path_.back();
+    }
 private:   
     distribution_t path_dist_n_;
     distribution_t path_dist_s_;

@@ -19,6 +19,8 @@
 #include <stack>
 
 #include <boost/exception/all.hpp>
+#include <boost/graph/adjacency_matrix.hpp>
+#include <boost/graph/connected_components.hpp>
 
 #include "bklib/assert.hpp"
 

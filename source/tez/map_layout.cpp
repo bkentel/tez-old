@@ -12,8 +12,12 @@ static auto const PADDING = 1;
 typedef tez::map_layout::rect_t rect_t;
 
 //==============================================================================
-//! Return a valid rect where the rect given by [where] can be placed,
-//! otherwise return an invalid rect.
+//! Adjust the position of @p where such that it intersects none of the
+//! @p rooms.
+//!
+//! @returns @c true if @p where intersects no @p rooms or @p where could be moved
+//! such that it intersects no @p rooms.
+//! @returns @c false otherwise.
 //==============================================================================
 bool adjust_rect(
     rect_t&                      where,
@@ -24,18 +28,22 @@ bool adjust_rect(
     auto const beg = std::cbegin(rooms);
     auto const end = std::cend(rooms);
 
-    //attempt to relocate [where] while there are intersections
+    //Make MAX_ATTEMPTS attempts to relocate [where] while there are still
+    //intersections.
     for (auto i = 0; i < MAX_ATTEMPTS; ++i) {
         auto const it = std::find_if(beg, end, [&](tez::room const& room) {
             return intersects(where, room.bounds());
         });        
 
         if (it == end) {
+            //no intersections
             return true;
         }
 
         auto const& other = it->bounds();
 
+        //move [where] the minimum distance possible so that it no longer
+        //intersects
         auto const left   = bklib::distance(where.right,  other.left);
         auto const right  = bklib::distance(where.left,   other.right);
         auto const top    = bklib::distance(where.bottom, other.top);
@@ -50,78 +58,81 @@ bool adjust_rect(
                 (min_dim == top)   ?
                     bklib::translate_by(where, 0, 0 - top - PADDING) :
                     bklib::translate_by(where, 0, 0 + bottom + PADDING);
+
+        //try again
     }
 
     return false;
 }
 
 //==============================================================================
-//! Return [r] centered around [reference].
+//! Return @p rect such that the centres of @p rect and @p reference are equal.
 //==============================================================================
 rect_t get_centered_rect(
     rect_t const reference,
-    rect_t const r
+    rect_t const rect
 ) {
     auto const dx =
         static_cast<signed>(reference.width()) -
-        static_cast<signed>(r.width());
+        static_cast<signed>(rect.width());
 
     auto const dy =
         static_cast<signed>(reference.height()) -
-        static_cast<signed>(r.height());
+        static_cast<signed>(rect.height());
 
-    return rect_t(
-        bklib::make_point(
-            reference.left + dx / 2,
-            reference.top  + dy / 2
-        ),
-        r.width(),
-        r.height()
+    return bklib::translate_to(rect,
+        reference.left + dx / 2,
+        reference.top  + dy / 2
     );
 }
 
 //==============================================================================
-//! Returns a valid rect of the same size as [r] offset from [reference] in
-//! the direction given  by [dir] where [r] can be placed. Otherwise,
-//! returns an invalid rect.
+//! Return @p room offset such that it is centered relative to @p reference and
+//! offset toward @p dir such that it does not intersect @p reference.
 //==============================================================================
 rect_t get_rect_relative_to(
-    tez::direction const  dir,
-    rect_t         const  reference,
-    tez::room      const& r
+    tez::direction const dir,
+    rect_t         const reference,
+    rect_t         const room
 ) {
-    auto const room_rect   = get_centered_rect(reference, r.bounds());
-    auto       result_rect = rect_t(0, 0, 0, 0);
+    auto const room_rect = get_centered_rect(reference, room);
 
-    auto const left   = bklib::distance(room_rect.right,  reference.left);
-    auto const right  = bklib::distance(room_rect.left,   reference.right);
-    auto const top    = bklib::distance(room_rect.bottom, reference.top);
-    auto const bottom = bklib::distance(room_rect.top,    reference.bottom);
+    auto const translate = [&](signed const dx, signed const dy) {
+        return bklib::translate_by(room_rect, dx, dy);
+    };
+
+    unsigned distance = 0;
 
     switch (dir) {
-    case tez::direction::north : return bklib::translate_by(room_rect, 0, 0 - PADDING - top);
-    case tez::direction::south : return bklib::translate_by(room_rect, 0, 0 + PADDING + bottom);
-    case tez::direction::east :  return bklib::translate_by(room_rect, 0 - PADDING - left, 0);
-    case tez::direction::west :  return bklib::translate_by(room_rect, 0 + PADDING + right, 0 );
+    case tez::direction::north :
+        distance = bklib::distance(room_rect.bottom, reference.top);
+        return translate(0, 0 - PADDING - distance);
+    case tez::direction::south :
+        distance = bklib::distance(room_rect.top, reference.bottom);
+        return translate(0, PADDING + distance);
+    case tez::direction::east :
+        distance = bklib::distance(room_rect.right, reference.left);
+        return translate(0 - PADDING - distance, 0);
+    case tez::direction::west :
+        distance = bklib::distance(room_rect.left, reference.right);
+        return translate(PADDING + distance, 0);
     }
+
+    //should never get here
+    BK_ASSERT(false);
 
     return room_rect;
 }
 
 } //namespace
 
-//==============================================================================
-//! Add [r] to the layout such that it intersects no existing rooms.
-//==============================================================================
 void map_layout::add_room(tez::room room) {
     //--------------------------------------------------------------------------
-    // Add candidates with [r] as the source for all directions other than
-    // [from].
+    // Add candidates for each cardinal direction except [from] in random order.
     //--------------------------------------------------------------------------
-    auto const add_candidates = [&](direction const from, rect_t const r) {
+    auto const add_candidates = [&](direction const from, rect_t const rect) {
         static direction const direction[] = {
-            direction::north, direction::east,
-            direction::south, direction::west,
+            direction::north, direction::east, direction::south, direction::west
         };
 
         auto const first = std::uniform_int_distribution<>(0, 3)(random_);
@@ -129,10 +140,12 @@ void map_layout::add_room(tez::room room) {
         for (unsigned i = 0; i < 4; ++i) {
             auto const dir = direction[(first + i) % 4];
             if (dir != from) {
-                candidates_.emplace(dir, r);
+                candidates_.emplace(dir, rect);
             }
         }
     };
+    //--------------------------------------------------------------------------
+    // Return a usuable candidate position.
     //--------------------------------------------------------------------------
     auto const get_candidate = [&] {
         if (candidates_.empty()) {
@@ -154,7 +167,7 @@ void map_layout::add_room(tez::room room) {
     //find a useable candidate
     while (!where || !adjust_rect(where, rooms_)) {
         std::tie(dir, where) = get_candidate();
-        where = get_rect_relative_to(dir, where, room);
+        where = get_rect_relative_to(dir, where, room.bounds());
     }
 
     add_candidates(tez::opposite_direction(dir), where);
@@ -169,56 +182,161 @@ void map_layout::add_room(tez::room room) {
 }
 
 tez::map map_layout::make_map() {
+    static unsigned const MAX_ATTEMPTS_PER_ROOM = 5;
+    static unsigned const MAX_ATTEMPTS_PER_DIR  = 5;
+
+    auto result = tez::map(extent_x_.distance(), extent_y_.distance());
+
+    if (extent_x_.min < 0 || extent_y_.min < 0) {
+        normalize();
+    }
+
+    for (auto const& room : rooms_) {
+        result.add_room(room);
+    }
+   
+    auto pg    = path_generator(bklib::make_random_wrapper(random_));
+    auto graph = boost::adjacency_matrix<boost::undirectedS>(rooms_.size());
+
     //--------------------------------------------------------------------------
     // Get a random NSEW direction
     //--------------------------------------------------------------------------
-    auto const get_random_direction = [&]() -> direction {
-        direction const dir[] = {
-            direction::north, direction::south,
-            direction::east,  direction::west,
+    auto const find_path = [&](tez::room const& room)
+        -> std::pair<bool, unsigned>
+    {
+        //----------------------------------------------------------------------
+        // Get a random NSEW direction
+        //----------------------------------------------------------------------
+        auto const get_random_direction = [&] {
+            direction const dir[] = {
+                direction::north, direction::south,
+                direction::east, direction::west
+            };
+
+            auto const i = std::uniform_int_distribution<unsigned>(0, 3)(random_);
+            return dir[i];
         };
+        //----------------------------------------------------------------------
 
-        auto const i = std::uniform_int_distribution<unsigned>(0, 3)(random_);
-        
-        return dir[i];
-    };
-    //--------------------------------------------------------------------------
-    auto result = tez::map(extent_x_.distance(), extent_y_.distance());
+        bool found_path = false;
 
-    for (auto const& r : rooms_) {
-        //translate the rooms such that all rooms have positive x and y.
-        result.add_room(r, 0 - extent_x_.min, 0 - extent_y_.min);
-    }
-
-    //std::cout << "generating paths..." << std::endl;
-    
-    auto pg = path_generator(bklib::make_random_wrapper(random_));
-
-    //unsigned room_num = 0;
-
-    for (auto const& room : rooms_) {
-        //std::cout << "generating paths for room " << (room_num++) << std::endl;
-
-        for (bool path = false; !path; ) {
+        for (unsigned i = 0; !found_path && i < MAX_ATTEMPTS_PER_ROOM; ++i) {
             auto const side = get_random_direction();
             
-            //switch (side) {
-            //case direction::north : std::cout << "trying north side..." << std::endl; break;
-            //case direction::south : std::cout << "trying south side..." << std::endl; break;
-            //case direction::east :  std::cout << "trying east side..." << std::endl; break;
-            //case direction::west :  std::cout << "trying west side..." << std::endl; break;
-            //default : BK_ASSERT(false); break;
-            //}
-
-
-            for (unsigned i = 0; !path && i < 10; ++i) {
-                path = pg.generate(room, result, side);
+            for (unsigned j = 0; !found_path && j < MAX_ATTEMPTS_PER_DIR; ++j) {
+                found_path = pg.generate(room, result, side);
             }
         }
         
-        pg.write_path(result);
+        if (!found_path) {
+            return std::make_pair(false, 0u);
+        }
+
+        auto start_point = static_cast<room::point_t>(pg.start_point());
+        auto end_point   = static_cast<room::point_t>(pg.end_point());
+
+        BK_ASSERT(room.contains(start_point));
+            
+        unsigned end_index = 0;
+        for (auto const& r : rooms_) {
+            if (r.contains(end_point)) break;
+            ++end_index;
+        }
+        
+        return std::make_pair(true, end_index);
+    };
+    //--------------------------------------------------------------------------
+
+    //for each room, attempt to find a path that connects it to another room.
+    unsigned src_index  = 0;
+    unsigned end_index  = 0;
+    bool     found_path = false;
+
+    for (auto const& room : rooms_) {    
+        std::tie(found_path, end_index) = find_path(room);
+
+        if (found_path) {
+            boost::add_edge(src_index, end_index, graph);
+            pg.write_path(result);
+        }
+
+        ++src_index;
     }
     
+    //while there is more than one component in the graph
+    std::vector<unsigned> components(rooms_.size(), 0);
+    std::vector<unsigned> vertex_counts(rooms_.size(), 0);
+    std::vector<unsigned> components_after(rooms_.size(), 0);
+
+    for (
+        auto count = boost::connected_components(graph, &components[0]);
+        count > 1;
+    ) {
+        //count the total verticies in each component
+        for (auto c : components) {
+            ++vertex_counts[c];
+        }
+
+        //the index of the component with the fewest verticies
+        auto const min = [&] {
+            auto const beg = std::cbegin(vertex_counts);
+            auto const end = std::cend(vertex_counts);
+            return std::distance(beg, std::min_element(beg, beg + count));
+        }();
+
+        auto const beg = std::cbegin(components);
+        auto const end = std::cend(components);
+        
+        //while a bridge between components has not been found
+        for (bool found_bridge = false; !found_bridge;) {
+            //for each vertex, in order, in the component with the minimum
+            //number of verticies attempt to add a new path as a bridge
+            for (
+                auto where = std::find(beg, end, min);
+                !found_bridge && where != end;
+                where = std::find(++where, end, min)
+            ) {
+                src_index = std::distance(beg, where);
+                auto const& room = rooms_[src_index];
+
+                std::tie(found_path, end_index) = find_path(room);
+                if (!found_path) continue;
+
+                bool const exists = boost::edge(src_index, end_index, graph).second;
+                if (exists) continue;
+
+                boost::add_edge(src_index, end_index, graph);
+
+                auto const new_count = boost::connected_components(
+                    graph, &components_after[0]
+                );
+                BK_ASSERT(new_count <= count);
+
+                //the path wasn't a bridge; try again
+                if (new_count == count) {
+                    boost::remove_edge(src_index, end_index, graph);
+                    continue;
+                }
+
+                found_bridge = true;
+                
+                //commit the new path and components
+                pg.write_path(result);
+                count = new_count;
+                std::copy(
+                    std::cbegin(components_after),
+                    std::cend(components_after),
+                    std::begin(components)
+                );
+
+                //reset the vertex counts
+                std::fill(
+                    std::begin(vertex_counts), std::end(vertex_counts), 0
+                );
+            }
+        }
+    }
+
     return result;
 }
 
@@ -226,8 +344,8 @@ void map_layout::normalize() {
     auto const dx = extent_x_.min;
     auto const dy = extent_y_.min;
 
-    for (auto& r : rooms_) {
-        r.translate_by(0 - dx, 0 - dy);
+    for (auto& room : rooms_) {
+        room.translate_by(0 - dx, 0 - dy);
     }
 
     extent_x_.min =  0;

@@ -108,7 +108,10 @@ bool tez::path_generator::generate(
     static unsigned const MAX_PATH_FAILURES       = 5;
     static unsigned const MAX_FIND_START_FAILURES = 5;
     
-    auto const bounds = origin.bounds();
+    auto const temp = origin.bounds();
+    BK_ASSERT(temp.left >= 0);
+    BK_ASSERT(temp.top >= 0);
+    auto const bounds = static_cast<bklib::rect<unsigned>>(temp);
 
     BK_DECLARE_DIRECTION_ARRAYS(dir_x, dir_y);
     //--------------------------------------------------------------------------

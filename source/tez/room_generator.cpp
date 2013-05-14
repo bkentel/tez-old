@@ -247,7 +247,7 @@ tez::compound_room_generator::find_connection_point(
                                direction_vector(search_dir).first;
 
     //--------------------------------------------------------------------------
-    auto const is_in_bounds = [&](unsigned const x, unsigned const y) {
+    auto const is_in_bounds = [&] {
         return (delta > 0 && primary < primary_size) ||
                (delta < 0 && primary > 0);
     };
@@ -275,7 +275,7 @@ tez::compound_room_generator::find_connection_point(
     //--------------------------------------------------------------------------
 
     //scan along the primary direction
-    while (is_in_bounds(x, y) && (room.at(x, y) != TARGET)) {
+    while (is_in_bounds() && (room.at(x, y) != TARGET)) {
         primary += delta;
     }
     BK_ASSERT(room.at(x, y) == TARGET);

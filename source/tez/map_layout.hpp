@@ -7,7 +7,6 @@
 #include "map.hpp"
 
 #include <vector>
-#include <memory>
 #include <queue>
 
 namespace tez {
@@ -30,25 +29,32 @@ public:
     {
     }
 
+    //--------------------------------------------------------------------------
+    //! Add a room to the layout and take ownership.
+    //--------------------------------------------------------------------------    
     void add_room(room r);
 
     unsigned width()  const { return extent_x_.distance(); }
     unsigned height() const { return extent_y_.distance(); }
 
-    //! return a map representing the layout.
+    //--------------------------------------------------------------------------
+    //! Create a map from the layout
+    //--------------------------------------------------------------------------
     map make_map();
 
-    //!move the origin to (0, 0)
+    //--------------------------------------------------------------------------
+    //! Adjust the layout such that all rooms lie in the positive quadrant.
+    //--------------------------------------------------------------------------
     void normalize();
 private:
     random_t random_;
 
-    bklib::min_max<> extent_x_; //!x range that the rooms occupy.
-    bklib::min_max<> extent_y_; //!y range that the rooms occypy.
+    bklib::min_max<> extent_x_; //! x range that the rooms occupy.
+    bklib::min_max<> extent_y_; //! y range that the rooms occypy.
     
-    room_list rooms_; //! the rooms.
+    room_list rooms_; //! The rooms.
 
-    //possible locations to attempt to place a new room.
+    //! Possible locations to attempt to place a new room relative to.
     std::queue<candidate_t> candidates_;
 };
 
