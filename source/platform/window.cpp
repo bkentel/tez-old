@@ -152,7 +152,7 @@ HWND bklib::window::create_window_(window* wnd) {
     static wchar_t const CLASS_NAME[] = L"test_wnd";
     static WNDCLASSEXW const wc = {
         sizeof(WNDCLASSEXW),
-        CS_OWNDC | CS_HREDRAW | CS_VREDRAW,
+        CS_HREDRAW | CS_VREDRAW,
         global_wnd_proc_,
         0,
         0,
