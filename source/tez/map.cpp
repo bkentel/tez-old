@@ -59,9 +59,11 @@ std::ostream& tez::operator<<(std::ostream& out, tez::map const& m) {
 
 namespace {
 
+using tez::NUM_CARDINAL_DIR;
+
 unsigned get_probabilities(unsigned dir, unsigned index) {
     struct probability_list {
-        unsigned values[4];
+        unsigned values[NUM_CARDINAL_DIR];
     };
 
     static probability_list const path_probabilities[] = {
@@ -71,8 +73,8 @@ unsigned get_probabilities(unsigned dir, unsigned index) {
         {20, 20, 10, 800}, //west
     };
 
-    BK_ASSERT(dir < 4);
-    BK_ASSERT(index < 4);
+    BK_ASSERT(dir   < NUM_CARDINAL_DIR);
+    BK_ASSERT(index < NUM_CARDINAL_DIR);
 
     return path_probabilities[dir].values[index];
 };
@@ -82,10 +84,12 @@ static auto get_prob_s = std::bind(get_probabilities, 1, std::placeholders::_1);
 static auto get_prob_e = std::bind(get_probabilities, 2, std::placeholders::_1);
 static auto get_prob_w = std::bind(get_probabilities, 3, std::placeholders::_1);
 
-static auto const path_prob_n = std::discrete_distribution<unsigned>(4, 0, 4, get_prob_n);
-static auto const path_prob_s = std::discrete_distribution<unsigned>(4, 0, 4, get_prob_s);
-static auto const path_prob_e = std::discrete_distribution<unsigned>(4, 0, 4, get_prob_e);
-static auto const path_prob_w = std::discrete_distribution<unsigned>(4, 0, 4, get_prob_w);
+typedef std::discrete_distribution<unsigned> prob_dist_t;
+
+static auto const path_prob_n = prob_dist_t(NUM_CARDINAL_DIR, 0, NUM_CARDINAL_DIR, get_prob_n);
+static auto const path_prob_s = prob_dist_t(NUM_CARDINAL_DIR, 0, NUM_CARDINAL_DIR, get_prob_s);
+static auto const path_prob_e = prob_dist_t(NUM_CARDINAL_DIR, 0, NUM_CARDINAL_DIR, get_prob_e);
+static auto const path_prob_w = prob_dist_t(NUM_CARDINAL_DIR, 0, NUM_CARDINAL_DIR, get_prob_w);
 
 } //namespace
 
@@ -226,7 +230,7 @@ bool tez::path_generator::generate(
 void tez::path_generator::write_path(map& out) {
     BK_ASSERT(path_.size() >= 2);
  
-    for (unsigned i = 1; i < path_.size() - 1; ++i) {
+    for (size_t i = 1; i < path_.size() - 1; ++i) {
         auto& tile = out.at(path_[i].x, path_[i].y);
         tile.type = tile_category::corridor;
     }

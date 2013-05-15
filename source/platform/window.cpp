@@ -1,7 +1,9 @@
 #include "pch.hpp"
 #include "window.hpp"
 
-window* window::get_window_ptr_(HWND handle) {
+namespace {
+
+bklib::window* get_window_ptr(HWND handle) {
     ::SetLastError(0);
 
     auto const result = ::GetWindowLongPtrW(handle, GWLP_USERDATA);
@@ -14,10 +16,10 @@ window* window::get_window_ptr_(HWND handle) {
         }
     }
 
-    return reinterpret_cast<window*>(result);
+    return reinterpret_cast<bklib::window*>(result);
 }
 
-void window::set_window_ptr_(HWND handle, window* ptr) {
+void set_window_ptr(HWND handle, bklib::window* ptr) {
     ::SetLastError(0);
     
     auto const result = ::SetWindowLongPtrW(
@@ -35,7 +37,9 @@ void window::set_window_ptr_(HWND handle, window* ptr) {
     }
 }
 
-LRESULT CALLBACK window::global_wnd_proc_(
+} //namespace
+
+LRESULT CALLBACK bklib::window::global_wnd_proc_(
     HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam
 ) throw() try {   
     // set the instance pointer for the window given by hwnd if it was
@@ -46,7 +50,7 @@ LRESULT CALLBACK window::global_wnd_proc_(
         auto const window_ptr =
             reinterpret_cast<window*>(cs->lpCreateParams);
 
-        set_window_ptr_(hwnd, window_ptr);
+        set_window_ptr(hwnd, window_ptr);
 
         // disable legacy IME messages; we are TSF aware.
         auto const result = ::ImmDisableIME((DWORD)-1);
@@ -56,7 +60,7 @@ LRESULT CALLBACK window::global_wnd_proc_(
     }
 
     // the window object to forward the message to.
-    auto const window = get_window_ptr_(hwnd);
+    auto const window = get_window_ptr(hwnd);
 
     if (window) {
         return window->wnd_proc_(hwnd, msg, wParam, lParam);
@@ -71,7 +75,7 @@ LRESULT CALLBACK window::global_wnd_proc_(
     BK_TODO;
 }
 
-LRESULT window::wnd_proc_(
+LRESULT bklib::window::wnd_proc_(
     HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam
 ) {
     switch (msg) {
@@ -84,7 +88,7 @@ LRESULT window::wnd_proc_(
     return ::DefWindowProcW(hwnd, msg, wParam, lParam);
 }
 
-LRESULT window::handle_close_(
+LRESULT bklib::window::handle_close_(
     HWND hwnd, WPARAM wParam, LPARAM lParam
 ) {
     if (on_close_) {
@@ -95,7 +99,7 @@ LRESULT window::handle_close_(
     return ::DefWindowProcW(hwnd, WM_CLOSE, wParam, lParam);
 }
 
-LRESULT window::handle_paint_(
+LRESULT bklib::window::handle_paint_(
     HWND hwnd, WPARAM wParam, LPARAM lParam
 ) {
     if (on_paint_) {
@@ -106,7 +110,7 @@ LRESULT window::handle_paint_(
     return ::DefWindowProcW(hwnd, WM_PAINT, wParam, lParam);
 }
 
-LRESULT window::handle_keydown_(
+LRESULT bklib::window::handle_keydown_(
     HWND hwnd, WPARAM wParam, LPARAM lParam
 ) {
     if (on_keydown_) {
@@ -124,7 +128,7 @@ LRESULT window::handle_keydown_(
     return ::DefWindowProcW(hwnd, WM_PAINT, wParam, lParam);
 }
 
-LRESULT window::handle_size_(
+LRESULT bklib::window::handle_size_(
     HWND hwnd, WPARAM wParam, LPARAM lParam
 ) {
     if (on_size_) {
@@ -142,7 +146,7 @@ LRESULT window::handle_size_(
     return ::DefWindowProcW(hwnd, WM_PAINT, wParam, lParam);
 }
 
-HWND window::create_window_(window* wnd) {
+HWND bklib::window::create_window_(window* wnd) {
     auto const instance = ::GetModuleHandleW(L"");
 
     static wchar_t const CLASS_NAME[] = L"test_wnd";
@@ -186,21 +190,21 @@ HWND window::create_window_(window* wnd) {
     return result;
 }
 
-window::window()
+bklib::window::window()
     : is_closed_(false)
     , handle_(create_window_(this))
 {
 }
 
-bool window::is_closed() const {
+bool bklib::window::is_closed() const {
     return is_closed_;
 }
 
-HWND window::handle() const {
+HWND bklib::window::handle() const {
     return handle_;
 }
 
-void window::do_events(bool const wait) {
+void bklib::window::do_events(bool const wait) {
     ::MSG msg;
 
     while (wait || ::PeekMessageW(&msg, 0, 0, 0, PM_NOREMOVE)) {
@@ -217,5 +221,4 @@ void window::do_events(bool const wait) {
         ::TranslateMessage(&msg);
         ::DispatchMessageW(&msg);
     }
-
 }

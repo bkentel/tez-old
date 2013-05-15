@@ -111,10 +111,12 @@ generate_points(
     };
     //----------------------------------------------------------------------
     auto const choose_point = [&](point_t const p) -> std::pair<bool, point_t> {
-        auto const base = distribution_t(0, 3)(random);
+        using namespace tez;
 
-        for (unsigned i = 0; i < 4; ++i) {
-            unsigned const j = (base + i) % 4u;
+        auto const base = distribution_t(0, NUM_CARDINAL_DIR-1)(random);
+
+        for (unsigned i = 0; i < NUM_CARDINAL_DIR; ++i) {
+            unsigned const j = (base + i) % NUM_CARDINAL_DIR;
             auto     const q = point_t(p.x + dx[j], p.y + dy[j]);
             
             if (!is_occupied(q)) return std::make_pair(true, q);

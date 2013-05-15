@@ -322,11 +322,7 @@
     <ClInclude Include="source\bklib\config.hpp" />
     <ClInclude Include="source\bklib\targa.hpp" />
     <ClInclude Include="source\platform\d2d_renderer.hpp" />
-    <ClInclude Include="source\retained\entity.hpp" />
     <ClInclude Include="source\bklib\geometry.hpp" />
-    <ClInclude Include="source\retained\keyboard.hpp" />
-    <ClInclude Include="source\retained\level.hpp" />
-    <ClInclude Include="source\retained\map_generator.hpp" />
     <ClInclude Include="source\pch.hpp" />
     <ClInclude Include="source\bklib\scope_exit.hpp" />
     <ClInclude Include="source\tez\direction.hpp" />
@@ -335,7 +331,6 @@
     <ClInclude Include="source\tez\map_layout.hpp" />
     <ClInclude Include="source\tez\room.hpp" />
     <ClInclude Include="source\tez\room_generator.hpp" />
-    <ClInclude Include="source\tez\room_type.hpp" />
     <ClInclude Include="source\tez\tile.hpp" />
     <ClInclude Include="source\tez\tile_category.hpp" />
     <ClInclude Include="source\types.hpp" />
@@ -364,6 +359,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test_Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Test_Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="source\platform\window.cpp" />
     <ClCompile Include="source\tez\tests\test_direction.cpp" />
     <ClCompile Include="source\tez\tests\test_grid2d.cpp" />
     <ClCompile Include="source\tez\tests\test_main.cpp">

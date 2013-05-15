@@ -1,53 +1,40 @@
 #include "pch.hpp"
 #include "d2d_renderer.hpp"
 
-d2d_renderer::d2d_renderer(HWND handle) {
-    // init com
-    {
-        HRESULT const hr = ::CoInitialize(nullptr);
-        if (hr != S_OK && hr != S_FALSE) {
-            BK_TODO;
-        }
-    }
+#define THROW_ON_FAILURE(x) [&] { \
+    HRESULT const hr = (x); \
+    if (FAILED(hr)) { \
+        BK_TODO; \
+    } \
+}()
 
-    // create the factory
-    {
-        ID2D1Factory* factory = nullptr;
-        HRESULT const hr = ::D2D1CreateFactory(
-            D2D1_FACTORY_TYPE_SINGLE_THREADED, &factory
-        );
+bklib::d2d_renderer::d2d_renderer(HWND handle) {   
+    THROW_ON_FAILURE(::CoInitialize(nullptr));
 
-        if (FAILED(hr)) {
-            BK_TODO;
-        }
+    factory_.reset([&] {
+        ID2D1Factory* result = nullptr;
+        THROW_ON_FAILURE(::D2D1CreateFactory(
+            D2D1_FACTORY_TYPE_SINGLE_THREADED, &result
+        ));
 
-        factory_.reset(factory);
-    }
-        
-    // create a render target
-    {
-        RECT rect;
-        ::GetClientRect(handle, &rect);
+        return result;
+    }());
 
-        ID2D1HwndRenderTarget* target = nullptr;			
-        HRESULT const hr = factory_->CreateHwndRenderTarget(
+    target_.reset([&] {
+        RECT r;
+        ::GetClientRect(handle, &r);
+
+        ID2D1HwndRenderTarget* result = nullptr;
+        THROW_ON_FAILURE(factory_->CreateHwndRenderTarget(
             ::D2D1::RenderTargetProperties(),
             ::D2D1::HwndRenderTargetProperties(
-                handle,
-                ::D2D1::SizeU(
-                    rect.right - rect.left,
-                    rect.bottom - rect.top
-                )
+                handle, ::D2D1::SizeU(r.right - r.left, r.bottom - r.top)
             ),
-            &target
-        );
+            &result
+        ));
 
-        if (FAILED(hr)) {
-            BK_TODO;
-        }
-
-        target_.reset(target);
-    }
+        return result;
+    }());
 
     {
         ID2D1SolidColorBrush* brush = nullptr;
@@ -65,7 +52,7 @@ d2d_renderer::d2d_renderer(HWND handle) {
     }
 }
 
-void d2d_renderer::resize(unsigned w, unsigned h) {
+void bklib::d2d_renderer::resize(unsigned w, unsigned h) {
     HRESULT const hr = target_->Resize(D2D1::SizeU(w, h));
 
     if (FAILED(hr)) {
@@ -73,18 +60,18 @@ void d2d_renderer::resize(unsigned w, unsigned h) {
     }
 }
 
-void d2d_renderer::begin_draw() {
+void bklib::d2d_renderer::begin_draw() {
     target_->BeginDraw();
 
     target_->SetTransform(D2D1::Matrix3x2F::Identity());
     target_->Clear(D2D1::ColorF(D2D1::ColorF::White));
 }
 
-void d2d_renderer::end_draw() {
+void bklib::d2d_renderer::end_draw() {
     HRESULT const hr = target_->EndDraw();
 }
 
-void d2d_renderer::fill_rect(int color, float left, float top, float right, float bottom) {
+void bklib::d2d_renderer::fill_rect(int color, float left, float top, float right, float bottom) {
     switch (color) {
     case 0 :
         solid_brush_->SetColor(D2D1::ColorF(0)); break;
@@ -95,6 +82,6 @@ void d2d_renderer::fill_rect(int color, float left, float top, float right, floa
     target_->FillRectangle(D2D1::RectF(left, top, right, bottom), solid_brush_.get());
 }
 
-d2d_renderer::~d2d_renderer() {
+bklib::d2d_renderer::~d2d_renderer() {
     ::CoUninitialize();
 }

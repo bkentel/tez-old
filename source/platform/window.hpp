@@ -3,7 +3,7 @@
 #include <Windows.h>
 #include <functional>
 
-#define BK_TODO __debugbreak()
+namespace bklib {
 
 #define BK_DEFINE_EVENT(NAME, SIG, VAR)                     \
     template <> struct listener_t<event_type::##NAME> {     \
@@ -50,8 +50,6 @@ public:
     BK_DEFINE_EVENT(on_size,    void (window&, unsigned w, unsigned h), on_size_);
     BK_DEFINE_EVENT(on_keydown, void (window&, unsigned code, unsigned repeat, unsigned scan, bool was_down), on_keydown_);
 private:
-    static window* get_window_ptr_(HWND handle);
-    static void    set_window_ptr_(HWND handle, window* ptr);
     
     static HWND create_window_(window* wnd);
     static LRESULT CALLBACK global_wnd_proc_(
@@ -81,6 +79,6 @@ private:
     HWND handle_;
 };
 
-
-
 #undef BK_DEFINE_EVENT
+
+} //namespace bklib

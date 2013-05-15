@@ -3,7 +3,7 @@
 #include <Windows.h>
 #include <d2d1.h>
 
-#define BK_TODO __debugbreak()
+namespace bklib {
 
 template <typename T>
 struct d2d_deleter {
@@ -39,3 +39,5 @@ private:
     d2d_unique<ID2D1HwndRenderTarget>::type target_;
     d2d_unique<ID2D1SolidColorBrush>::type  solid_brush_;
 };
+
+} //namespace bklib

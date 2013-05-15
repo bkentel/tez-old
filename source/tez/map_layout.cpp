@@ -131,17 +131,13 @@ void map_layout::add_room(tez::room room) {
     // Add candidates for each cardinal direction except [from] in random order.
     //--------------------------------------------------------------------------
     auto const add_candidates = [&](direction const from, rect_t const rect) {
-        static direction const direction[] = {
-            direction::north, direction::east, direction::south, direction::west
-        };
-
-        auto const first = std::uniform_int_distribution<>(0, 3)(random_);
-
-        for (unsigned i = 0; i < 4; ++i) {
-            auto const dir = direction[(first + i) % 4];
+        auto dir = tez::random_cardinal_direction(random_);
+        for (auto i = 0u; i < NUM_CARDINAL_DIR-1; ++i) {
             if (dir != from) {
                 candidates_.emplace(dir, rect);
             }
+
+            dir = tez::next_cardinal_direction(dir);
         }
     };
     //--------------------------------------------------------------------------
@@ -204,24 +200,10 @@ tez::map map_layout::make_map() {
     auto const find_path = [&](tez::room const& room)
         -> std::pair<bool, unsigned>
     {
-        //----------------------------------------------------------------------
-        // Get a random NSEW direction
-        //----------------------------------------------------------------------
-        auto const get_random_direction = [&] {
-            direction const dir[] = {
-                direction::north, direction::south,
-                direction::east, direction::west
-            };
-
-            auto const i = std::uniform_int_distribution<unsigned>(0, 3)(random_);
-            return dir[i];
-        };
-        //----------------------------------------------------------------------
-
         bool found_path = false;
 
         for (unsigned i = 0; !found_path && i < MAX_ATTEMPTS_PER_ROOM; ++i) {
-            auto const side = get_random_direction();
+            auto const side = random_cardinal_direction(random_);
             
             for (unsigned j = 0; !found_path && j < MAX_ATTEMPTS_PER_DIR; ++j) {
                 found_path = pg.generate(room, result, side);
@@ -247,11 +229,12 @@ tez::map map_layout::make_map() {
     };
     //--------------------------------------------------------------------------
 
-    //for each room, attempt to find a path that connects it to another room.
+    
     unsigned src_index  = 0;
     unsigned end_index  = 0;
     bool     found_path = false;
-
+    
+    //for each room, attempt to find a path that connects it to another room.
     for (auto const& room : rooms_) {    
         std::tie(found_path, end_index) = find_path(room);
 
@@ -263,11 +246,11 @@ tez::map map_layout::make_map() {
         ++src_index;
     }
     
-    //while there is more than one component in the graph
     std::vector<unsigned> components(rooms_.size(), 0);
     std::vector<unsigned> vertex_counts(rooms_.size(), 0);
     std::vector<unsigned> components_after(rooms_.size(), 0);
 
+    //while there is more than one component in the graph
     for (
         auto count = boost::connected_components(graph, &components[0]);
         count > 1;
@@ -281,7 +264,9 @@ tez::map map_layout::make_map() {
         auto const min = [&] {
             auto const beg = std::cbegin(vertex_counts);
             auto const end = std::cend(vertex_counts);
-            return std::distance(beg, std::min_element(beg, beg + count));
+            return static_cast<unsigned>(
+                std::distance(beg, std::min_element(beg, beg + count))
+            );
         }();
 
         auto const beg = std::cbegin(components);
@@ -296,7 +281,7 @@ tez::map map_layout::make_map() {
                 !found_bridge && where != end;
                 where = std::find(++where, end, min)
             ) {
-                src_index = std::distance(beg, where);
+                src_index = static_cast<unsigned>(std::distance(beg, where));
                 auto const& room = rooms_[src_index];
 
                 std::tie(found_path, end_index) = find_path(room);

@@ -104,7 +104,7 @@ public:
         return data_.at(x, y);
     }
 
-    bool contains(point_t p) const {
+    bool contains(point_t const p) const {
         return bounds().intersects(p);
     }
     

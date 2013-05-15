@@ -20,12 +20,15 @@ enum class direction {
     here,
     none,
 };
+
+static unsigned const NUM_CARDINAL_DIR = 4u;
+static unsigned const NUM_PLANAR_DIR   = 8u;
 //==============================================================================
 //! Declare arrays defining vectors for each direction.
 //==============================================================================
 #define BK_DECLARE_DIRECTION_ARRAYS(xname, yname) \
-    signed const xname[] = { 0, 0, 1, -1,  1, -1, -1, 1}; \
-    signed const yname[] = {-1, 1, 0,  0, -1,  1, -1, 1}
+    signed const xname[::tez::NUM_PLANAR_DIR] = { 0, 0, 1, -1,  1, -1, -1, 1}; \
+    signed const yname[::tez::NUM_PLANAR_DIR] = {-1, 1, 0,  0, -1,  1, -1, 1}
 //==============================================================================
 //! Return the direction opposite d.
 //==============================================================================
@@ -52,12 +55,12 @@ inline std::pair<signed, signed> direction_vector(direction const d) {
 
 inline direction next_cardinal_direction(direction const d) {
     auto const i = static_cast<size_t>(d);
-    return static_cast<direction>((i + 1) % 4u);
+    return static_cast<direction>((i + 1) % NUM_CARDINAL_DIR);
 }
 
 inline direction prev_cardinal_direction(direction const d) {
     auto const i = static_cast<size_t>(d);
-    return static_cast<direction>((i - 1) % 4u);
+    return static_cast<direction>((i - 1) % NUM_CARDINAL_DIR);
 }
 
 //==============================================================================
