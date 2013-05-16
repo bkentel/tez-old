@@ -6,6 +6,13 @@
 
 namespace tez {
 
+struct background_tile {
+    unsigned type    : 16;
+    unsigned flags   : 16;
+    unsigned texture : 16;
+    unsigned unused  : 16;
+    unsigned data    : 64;
+};
 
 struct tile_data {
     template <typename T>

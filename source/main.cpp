@@ -51,6 +51,12 @@
 //
 //////////////////////////////////////////////////////////////////////////////////
 
+bklib::rect<unsigned> tile_index_to_rect(unsigned index) {
+    tiles_per_row = tile_set_width / tile_size;
+    
+    unsigned x = index % tiles_per_row;
+    unsigned y = index / tiles_per_row;
+}
 
 int main() {
     using bklib::window;
