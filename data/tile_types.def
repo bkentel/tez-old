@@ -1,0 +1,14 @@
+{
+	"empty": {
+		"description": {
+			"en": "Empty space.",
+			"jp"; "空虚。"
+		}
+	},
+	"floor": {
+		"description": {
+			"en": "A simple floor.",
+			"jp"; "特徴のない床。"
+		}
+	}
+}

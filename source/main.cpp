@@ -1,6 +1,8 @@
 #include "pch.hpp"
 #include "platform/window.hpp"
 #include "platform/d2d_renderer.hpp"
+#include "tez/map_layout.hpp"
+#include "tez/room_generator.hpp"
 
 //#include "targa.hpp"
 //#include "quad_tree.hpp"
@@ -51,12 +53,6 @@
 //
 //////////////////////////////////////////////////////////////////////////////////
 
-bklib::rect<unsigned> tile_index_to_rect(unsigned index) {
-    tiles_per_row = tile_set_width / tile_size;
-    
-    unsigned x = index % tiles_per_row;
-    unsigned y = index / tiles_per_row;
-}
 
 int main() {
     using bklib::window;
@@ -80,12 +76,62 @@ int main() {
 
     //world the_world;
 
+    std::default_random_engine engine(::GetTickCount());
+    auto random = bklib::make_random_wrapper(engine);
+
+    auto gen_simple   = tez::simple_room_generator(random);
+    auto gen_compound = tez::compound_room_generator(random);
+
+    auto const make_map = [&] {
+        tez::map_layout layout(random);
+
+        for (int i = 0; i < 20; ++i) {
+            if (i % 4 == 0) {
+                layout.add_room(gen_compound.generate());
+            } else {
+                layout.add_room(gen_simple.generate());
+            }
+        }
+    
+        layout.normalize();
+        return layout.make_map();
+    };
+
+    auto test_map = make_map();
+
     bklib::window win;
     bklib::d2d_renderer renderer(win.handle());
     
     win.listen<window::event_type::on_keydown>([&](
         window& w, unsigned code, unsigned repeat, unsigned scan, bool was_down
     ) {
+        static int delta = 3;
+
+        switch (code) {
+        case VK_SPACE :
+            test_map = make_map();
+            break;
+        case VK_ADD :
+            renderer.zoom_in();
+            break;
+        case VK_SUBTRACT :
+            renderer.zoom_out();
+            break;
+        case VK_UP :
+            renderer.translate(0, delta);
+            break;
+        case VK_DOWN :
+            renderer.translate(0, -delta);
+            break;
+        case VK_LEFT :
+            renderer.translate(delta, 0);
+            break;
+        case VK_RIGHT :
+            renderer.translate(-delta, 0);
+            break;
+        }
+
+        InvalidateRect(w.handle(), nullptr, FALSE);
         //auto const mapping = mapper.get_mapping(code);
         //the_world.on_command(mapping);
     });
@@ -96,7 +142,25 @@ int main() {
 
     win.listen<window::event_type::on_paint>([&](window& w) {
         renderer.begin_draw();
-        renderer.draw_bitmap(bklib::rect<int>(0, 0, 0, 0), bklib::rect<int>(0, 0, 255, 255));
+        
+        for (unsigned y = 0; y < test_map.height(); ++y) {
+            for (unsigned x = 0; x < test_map.width(); ++x) {
+                unsigned index = 0;
+                
+                switch (test_map.at(x, y).type) {
+                case tez::tile_category::empty :    index = 0; break;
+                case tez::tile_category::wall :     index = 2; break;
+                case tez::tile_category::ceiling :  index = 24; break;
+                case tez::tile_category::floor :    index = 1; break;
+                case tez::tile_category::door :     index = 32; break;
+                case tez::tile_category::corridor : index = 20; break;
+                }
+                
+                renderer.draw_bitmap(index, bklib::make_point(x, y));
+            }
+        }
+        
+        
         renderer.end_draw();
         
         ::ValidateRect(w.handle(), nullptr);

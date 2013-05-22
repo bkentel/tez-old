@@ -1,0 +1,25 @@
+{
+	"simple_room": {
+		"width": {
+			"uniform": [3, 8]
+		},
+		"height": {
+			"uniform": [3, 8]
+		}
+	},
+	"compound_room": {
+		"cell_size": {
+			"uniform": [3, 5]
+		},
+		"cell_count": {
+			"uniform": [5, 20]
+		}
+	},
+	"regular_corridor": {
+		"primary":   100,
+		"secondary": 10,
+		"tertiary":  5
+	}
+
+
+}

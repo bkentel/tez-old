@@ -1,15 +1,13 @@
 #include "pch.hpp"
 #include "d2d_renderer.hpp"
 
-#define THROW_ON_FAILURE(x) [&] { \
-    HRESULT const hr = (x); \
-    if (FAILED(hr)) { \
-        ::std::cout << "error = " << hr; \
-        BK_TODO; \
-    } \
-}()
 
-bklib::d2d_renderer::d2d_renderer(HWND handle) {   
+
+bklib::d2d_renderer::d2d_renderer(HWND handle)
+    : zoom_factor_(1.0f)
+    , dx_(0.0f)
+    , dy_(0.0f)
+{   
     THROW_ON_FAILURE(::CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE));
 
     image_factory_.reset([&] {
@@ -102,6 +100,9 @@ bklib::d2d_renderer::d2d_renderer(HWND handle) {
         ));
         return result;
     }());
+
+    target_->SetAntialiasMode(D2D1_ANTIALIAS_MODE_ALIASED);
+    //auto const mode = target_->GetAntialiasMode();
 }
 
 void bklib::d2d_renderer::resize(unsigned w, unsigned h) {
@@ -113,10 +114,13 @@ void bklib::d2d_renderer::resize(unsigned w, unsigned h) {
 }
 
 void bklib::d2d_renderer::begin_draw() {
-    target_->BeginDraw();
+    target_->BeginDraw();  
 
-    target_->SetTransform(D2D1::Matrix3x2F::Identity());
-    target_->Clear(D2D1::ColorF(D2D1::ColorF::White));
+    target_->SetTransform(
+        D2D1::Matrix3x2F::Scale(zoom_factor_, zoom_factor_) *
+        D2D1::Matrix3x2F::Translation(dx_, dy_)
+    );
+    target_->Clear(D2D1::ColorF(D2D1::ColorF::Black));
 }
 
 void bklib::d2d_renderer::end_draw() {
@@ -134,16 +138,47 @@ void bklib::d2d_renderer::fill_rect(int color, float left, float top, float righ
     target_->FillRectangle(D2D1::RectF(left, top, right, bottom), solid_brush_.get());
 }
 
-void bklib::d2d_renderer::draw_bitmap(bklib::rect<int> src, bklib::rect<int> dest) {
+void bklib::d2d_renderer::draw_bitmap(unsigned index, point2d<unsigned> dest) {
+    static unsigned const tex_dim  = 256;
+    static unsigned const tile_dim = 16;
+    static unsigned const tile_w   = tex_dim / tile_dim;
+
+    unsigned const xi = index % tile_w;
+    unsigned const yi = index / tile_w;
+
+    unsigned const src_l = xi * tile_dim;
+    unsigned const src_t = yi * tile_dim;
+    unsigned const src_r = src_l + tile_dim;
+    unsigned const src_b = src_t + tile_dim;
+
+    unsigned const dst_l = dest.x * tile_dim;
+    unsigned const dst_t = dest.y * tile_dim;
+    unsigned const dst_r = dst_l + tile_dim;
+    unsigned const dst_b = dst_t + tile_dim;
+
     target_->DrawBitmap(
         image_.get(),
-        D2D1::RectF(0, 0, 255, 255),
+        D2D1::RectF(dst_l, dst_t, dst_r, dst_b),
         1.0f,
         D2D1_BITMAP_INTERPOLATION_MODE_NEAREST_NEIGHBOR,
-        D2D1::RectF(16, 0, 31, 15)
+        D2D1::RectF(src_l, src_t, src_r, src_b)
     );
 }
 
 bklib::d2d_renderer::~d2d_renderer() {
-    ::CoUninitialize();
+}
+
+void bklib::d2d_renderer::zoom_in() {
+    zoom_factor_ += 0.1f;
+    if (zoom_factor_ > 10.0f) zoom_factor_ = 10.0f;
+}
+
+void bklib::d2d_renderer::zoom_out() {
+    zoom_factor_ -= 0.1f;
+    if (zoom_factor_ < 0.1f) zoom_factor_ = 0.1f;
+}
+
+void bklib::d2d_renderer::translate(int dx, int dy) {
+    dx_ += dx;
+    dy_ += dy;
 }

@@ -1,0 +1,18 @@
+{
+	"actions": {
+		"ACTION_N": {
+			"default bindings": ["KEY_UP", "KEY_NUM8"],
+			"description": {
+				"en": "Move north.",
+				"jp": "北へ移動する。"
+			}
+		},
+		"ACTION_S": {
+			"default bindings": ["KEY_DOWN", "KEY_NUM2"],
+			"description": {
+				"en": "Move south.",
+				"jp": "南へ移動する。"
+			}
+		}
+	}
+}

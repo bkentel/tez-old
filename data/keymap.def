@@ -1,0 +1,13 @@
+{
+	"keymap": {
+		"ACTION_N": ["KEY_UP", "KEY_NUM8"],
+		"ACTION_S": ["KEY_DOWN", "KEY_NUM2"],
+		"ACTION_W": ["KEY_LEFT", "KEY_NUM4"],
+		"ACTION_E": ["KEY_RIGHT", "KEY_NUM6"],
+		"ACTION_HERE": ["KEY_PERIOD", "KEY_NUM5"],
+		"ACTION_NW": ["KEY_NUM7"],
+		"ACTION_NE": ["KEY_NUM9"],
+		"ACTION_SW": ["KEY_NUM1"],
+		"ACTION_SE": ["KEY_NUM3"]
+	}
+}
